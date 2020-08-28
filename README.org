@@ -1,0 +1,93 @@
+#+AUTHOR: esac
+#+EMAIL: esac-io@tutanota.com
+#+KEYWORDS: readme, emacs, elisp, autoloads, elisp, package
+#+LANGUAGE: en
+#+PROPERTY: header-args :tangle no
+
+* Introduction
+
+  Generate autoloads automatically.
+
+  The 'autoload' facility lets you register the existence of a function or
+  macro, but put off loading the file that defines it.
+  The first call to the function automatically loads the proper
+  library, in order to install the real definition and other
+  associated code, then runs the real definition as if it had
+  been loaded all along.
+
+  This package will monitor directories and generate load definitions
+  when necessary.
+
+* Dependencies
+
+  - cl-seq
+  - autoloads
+  - filenotify
+
+* Tested on
+
+  - Emacs 26.3
+  - Emacs 28.0.50
+  - For FreeBSD users: emacs-devel ports.
+
+* Installation
+** Manually
+
+   Clone =Lazy= repository to an arbitrary location:
+
+   #+BEGIN_SRC sh
+
+   $ git clone https://github.com/esac-io/lazy ~/.emacs.d/site-elisp/lazy
+
+   #+END_SRC
+
+   Add =Cannon= directory to =load-path= in your
+   Emacs initialization file (~init.el~) and load it.
+
+   #+BEGIN_SRC emacs-lisp
+
+   ;; add to load-path
+   (add-to-list 'load-path "/replace/me/to/lazy/full/path")
+
+   ;; load lazy feature
+   (require 'lazy nil t)
+
+   #+END_SRC
+
+   - Note: For a more dynamic approach:
+     - =M-x load-file RET=
+     - =M-x load-library RET lazy RET=
+
+** Compile
+
+   * Note: Optional but recommended.
+
+   To compile the files to the =Elisp= byte-compiled representation:
+
+   #+BEGIN_SRC sh
+
+   [at-lazy-root-directory]$ make
+
+   #+END_SRC
+
+* Usage
+
+  =M-x lazy-update-autolods RET=
+
+  That's all! :D
+
+* Customize
+* References
+
+  1. [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Autoload.html][autoloads]]
+
+* LICENSE
+  MIT
+* EOF
+
+  #+BEGIN_SRC
+  I don't think necessity is the mother of invention.
+  Invention arises directly from idleness, possibly also
+  from laziness. To save oneself trouble.
+  #+END_SRC
+  | Agatha Mary Clarissa Miller |

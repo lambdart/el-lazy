@@ -36,6 +36,7 @@
 (require 'cl-seq)
 (require 'autoload)
 (require 'filenotify)
+(require 'dired-aux)
 
 (defgroup lazy nil
   "Autoloads generator."
@@ -86,6 +87,12 @@ will be created and the autoloads file updated automatically."
   :group 'lazy
   :safe t)
 
+(defcustom lazy-interval 4
+  "Seconds interval used to trigger the timer, default 4 seconds."
+  :type 'integer
+  :group 'lazy
+  :safe t)
+
 (defvar lazy-directories
   (list (expand-file-name "lisp/" user-emacs-directory)
         (expand-file-name "site-lisp/" user-emacs-directory))
@@ -97,6 +104,9 @@ will be created and the autoloads file updated automatically."
 (defvar lazy-internal-vars
   '(lazy-file-descriptors)
   "List of internal variables.")
+
+(defvar lazy-timer nil
+  "System interface timer.")
 
 (defvar lazy-mode nil
   "Non-nil means that lazy-mode is enabled.")
@@ -138,18 +148,30 @@ the resulting `loaddefs' file-name and location."
       (setq dir (cdr (assoc file lazy-files-alist)))
       (lazy-update-directory-autoloads dir file))))
 
-;; TODO: call `lazy-update-autoloads' function
 (defun lazy--file-notify-callback (event)
   "The `filenotify' related callback, called when a EVENT occur."
   (let ((decriptor (car event))
         (action (cadr event))
         (output ""))
+    ;; set logs message
     (if (not (file-notify-valid-p decriptor))
-        (setq output "Lazy: Error, decriptor not valid.")
+        (message "[Lazy][Error]: invalid file decriptor")
+      ;; look to this events:
       (when (or (eq action 'created)
                 (eq action 'deleted)
                 (eq action 'renamed))
-        (lazy-update-autoloads)))))
+        ;; if timer was already initialized, restart it
+        ;; this is used to avoid to call lazy-update-autoloads
+        ;; after each modification on the target directories
+        ;; when you download a lot of packages for instance,
+        ;; wait a little time (seconds) and then update the loaddefs
+        ;; cancel the timer, if necessary
+        (when lazy-timer
+          (cancel-timer lazy-timer)
+          (message "[Lazy]: Timer stopped"))
+        ;; start timer
+        (setq lazy-timer (run-with-timer lazy-interval nil 'lazy-update-autoloads))
+        (message "[Lazy]: Timer started")))))
 
 (defun lazy--add-file-notify-watch (dirs)
   "Add DIRS to the notifications system: `filenotofy'.
@@ -187,6 +209,7 @@ and disables it otherwise."
   :lighter lazy-minor-mode-string
   (cond
    (lazy-mode
+    ;; TODO: set/clean internal directories list (lazy-directories)
     ;; add file watchers
     (when lazy-enable-filenotify-flag
       (lazy--add-file-notify-watch lazy-directories))

@@ -6,7 +6,10 @@
 
 * Introduction
 
-  Generate autoloads automatically.
+  Lazy loading (also known as asynchronous loading) is a technique
+  commonly used in computer programming to defer initialization of an object
+  until the point at which it is needed. It can contribute to efficiency
+  in the program's operation if properly and appropriately used.
 
   The 'autoload' facility lets you register the existence of a function or
   macro, but put off loading the file that defines it.
@@ -15,14 +18,16 @@
   associated code, then runs the real definition as if it had
   been loaded all along.
 
-  This package will monitor directories and generate load definitions
-  when necessary.
+  This package will monitor directories and automatically generate
+  load definitions when necessary, also provides interactive functions
+  to trigger the described feature.
 
 * Dependencies
 
   - cl-seq
   - autoloads
   - filenotify
+  - dired-aux
 
 * Tested on
 
@@ -79,7 +84,8 @@
 * Customize
 * References
 
-  1. [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Autoload.html][autoloads]]
+  1. https://www.gnu.org/software/emacs/manual/html_node/elisp/Autoload.html
+  2. https://en.wikipedia.org/wiki/Lazy_loading
 
 * LICENSE
   MIT

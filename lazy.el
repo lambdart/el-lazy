@@ -3,9 +3,9 @@
 ;; URL: https://github.com/esac-io/lazy
 ;; Author: esac <esac-io@tutanota.com>
 ;; Maintainer: esac
-;; Version: 0.0.1 alpha
-;; Package-Requires: autoload filenotify cl-seq
-;; Keywords: autoloads load
+;; Version: 0.0.2 alpha
+;; Package-Requires: autoload filenotify cl-seq dired-aux
+;; Keywords: autoloads load definitions
 ;;
 ;;; MIT License
 ;;
@@ -45,8 +45,13 @@
 
 (defcustom lazy-files-alist
   (list
-   (cons "lisp-loaddefs.el"      (expand-file-name "lisp/" user-emacs-directory))
-   (cons "site-lisp-loaddefs.el" (expand-file-name "site-lisp/" user-emacs-directory)))
+   ;; lisp directory
+   (cons "lisp-loaddefs.el"
+         (expand-file-name "lisp/" user-emacs-directory))
+   ;; site-lisp directory
+   (cons "site-lisp-loaddefs.el"
+         (expand-file-name "site-lisp/" user-emacs-directory)))
+
   "Each element is a list of the form (FILE-NAME DIRECTORY).
 
 FILE-NAME can be any string, it's recommended though to choose the file-names
@@ -87,17 +92,17 @@ will be created and the autoloads file updated automatically."
   :group 'lazy
   :safe t)
 
-(defcustom lazy-interval 4
-  "Seconds interval used to trigger the timer, default 4 seconds."
+(defcustom lazy-timer-interval 4
+  "Timer interval (seconds) used to trigger the timer, default 4 seconds."
   :type 'integer
   :group 'lazy
   :safe t)
 
 (defvar lazy-file-names '()
-  "List of file-names (internal).")
+  "File-names list.")
 
 (defvar lazy-file-directories '()
-  "List of directories (internal).")
+  "List of directories.")
 
 (defvar lazy-file-descriptors '()
   "List of file descriptors.")
@@ -113,13 +118,19 @@ will be created and the autoloads file updated automatically."
 (defvar lazy-mode nil
   "Non-nil means that lazy-mode is enabled.")
 
+(defun lazy--message (format-string &rest args)
+  "If `lazy-debug-message-flag' is non-nil invoke `message' \
+passing FORMAT-STRING and ARGS."
+  (when lazy-debug-messages-flag
+    (apply 'message format-string args)))
+
 (defun lazy--file-notify-callback (event)
   "The `filenotify' related callback, called when a EVENT occur."
   (let ((decriptor (car event))
         (action (cadr event)))
     ;; set logs message
     (if (not (file-notify-valid-p decriptor))
-        (message "[Lazy][Error]: invalid file decriptor")
+        (lazy--message "[Lazy]: Error, invalid file decriptor")
       ;; look to this events:
       (when (or (eq action 'created)
                 (eq action 'deleted)
@@ -132,10 +143,11 @@ will be created and the autoloads file updated automatically."
         ;; cancel the timer, if necessary
         (when lazy-timer
           (cancel-timer lazy-timer)
-          (message "[Lazy]: Timer stopped"))
+          (lazy--message "[Lazy]: Timer stopped"))
         ;; start timer
-        (setq lazy-timer (run-with-timer lazy-interval nil 'lazy-update-autoloads))
-        (message "[Lazy]: Timer started")))))
+        (setq lazy-timer
+              (run-with-timer lazy-timer-interval nil 'lazy-update-autoloads))
+        (lazy--message "[Lazy]: Timer started")))))
 
 (defun lazy--add-file-notify-watch (dirs)
   "Add DIRS to the notifications system: `filenotofy'.
@@ -208,6 +220,18 @@ the resulting `loaddefs' file-name and location."
       (lazy-update-directory-autoloads dir fn))))
 
 ;;;###autoload
+(defun lazy-toggle-debug-messages (&optional arg)
+  "Toggle `lazy-debug-messages-flag' bool value.
+If optional ARG is non-nil, force the activation of debug messages."
+  (interactive "P")
+  ;; toggle logic
+  (setq lazy-debug-messages-flag
+        (or arg (not lazy-debug-messages-flag)))
+  ;; logs: show message at the bottom (echo area)
+  (message "Lazy debug messages: %s"
+           (if lazy-debug-messages-flag "on" "off")))
+
+;;;###autoload
 (define-minor-mode lazy-mode
   "Define a new minor mode `lazy-mode'.
 
@@ -242,20 +266,8 @@ and disables it otherwise."
            (if lazy-mode "enable" "disable")))
 
 ;;;###autoload
-(defun lazy-toggle-debug-messages (&optional arg)
-  "Toggle `lazy-debug-messages-flag' bool value.
-If optional ARG is non-nil, enable debug messages."
-  (interactive "P")
-  (setq lazy-debug-messages-flag
-        (or arg
-            (not lazy-debug-messages-flag)))
-  (message "Lazy debug messages: %s"
-           (if lazy-debug-messages-flag "on" "off")))
-
-;;;###autoload
 (defun turn-on-lazy-mode ()
   "Turn lazy-mode to on.
-
 If \\[universal-argument] enable debug messages."
   (interactive)
   (lazy-toggle-debug-messages current-prefix-arg)

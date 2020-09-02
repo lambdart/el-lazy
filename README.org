@@ -141,15 +141,13 @@
 
   - =lazy-files-alist= :: Associative list of file-names (loaddefs) destination and
     respective source path (root) directory, example:
-
+    \
     #+BEGIN_SRC emacs-lisp
-
     (list (cons "site-lisp-loaddefs.el"
                 (expand-file-name "site-lisp" user-emacs-directory)))
-
     #+END_SRC
 
-    * RESULTS: ((site-lisp-loaddefs.el . /home/esac/.emacs.d/site-lisp))
+    RESULT: =(("site-lisp-loaddefs.el" . "/home/<user>/.emacs.d/site-lisp"))=
 
   - =lazy-minor-mode-string= :: String to be displayed at mode-line.
     Default: "lazy"

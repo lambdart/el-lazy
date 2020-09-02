@@ -18,9 +18,24 @@
   associated code, then runs the real definition as if it had
   been loaded all along.
 
-  This package will monitor directories and automatically generate
-  load definitions when necessary, also provides interactive functions
-  to trigger the described feature.
+  This package will monitor arbitrary directories and
+  automatic generate load definitions when necessary,
+  also provides interactive functions to trigger the
+  described feature.
+
+* Motivation
+
+  Provide a easy (automatic) way to generate =autoloads= from
+  packages (or any elisp code) providing =lazy= loading and boosting
+  =Emacs= initialization.
+
+  | Lazy | Start-Time                           |
+  | No   | Emacs started in 4.871672671 seconds |
+  | Yes  | Emacs started in 0.489159734 seconds |
+
+  Also notice that =Emacs= become more stable (guessing) and fast,
+  because 'exotic' (less used resources) are loaded only when some
+  'autoload' function is called.
 
 * Dependencies
 
@@ -31,9 +46,8 @@
 
 * Tested on
 
-  - Emacs 26.3
-  - Emacs 28.0.50
-  - For FreeBSD users: emacs-devel ports.
+  - FreeBSD 12.1
+  - Emacs 26.3, 28.0.50
 
 * Installation
 ** Manually
@@ -77,11 +91,77 @@
 
 * Usage
 
-  =M-x lazy-update-autolods RET=
+  Set the `lazy-files-alist' variable, e.g:
+
+  #+BEGIN_SRC emacs-lisp
+  (customize-set-variable
+   'lazy-files-alist
+   (list (cons "site-lisp-loaddefs.el"
+               (expand-file-name "site-lisp/" user-emacs-directory)))
+  #+END_SRC
+
+  and invoke: =M-x lazy-update-autolods RET=
+
+  Set the variable =lazy-enable-filenotify-flag= to =t= (true), to
+  generate the load definitions =autoloads= automatically when this
+  directory (=~/.emacs.d/site-lisp/=)  altered, i.e, when you
+  download some packages to it.
+
+  It's also possible to invoke `lazy-update-directory-autoloads`
+  interactively: =M-x lazy-update-directory-autoloads RET=
+
+  The procedure will ask for the root directory (where packages and
+  the =elisp= code resides) and the referent file-name-path where the
+  load definitions will be saved.
 
   That's all! :D
 
+** Require
+
+   After the =loaddefs= was generated just add it to your =init.el=
+   and all the other =(require 'packages)= are unnecessary.
+
+   Example:
+
+   #+BEGIN_SRC emacs-lisp
+   (require 'site-lisp-loaddefs)
+   #+END_SRC
+
 * Customize
+
+  * Note: To see all the options inside =Emacs= and customize it,
+    use: =M-x customize-group RET lazy RET=.
+
+  We have a few available options to customize some aspects of cannon,
+  even though the behavior will probably stay the same. Remember: this
+  package was designed having vanilla =Emacs= in mind, so if you are
+  missing something, it'll be necessary to properly extend it.
+
+  - =lazy-files-alist= :: Associative list of file-names (loaddefs) destination and
+    respective source path (root) directory, example:
+
+    #+BEGIN_SRC emacs-lisp
+    (list (cons "site-lisp-loaddefs.el"
+                (expand-file-name "site-lisp" user-emacs-directory)))
+    #+END_SRC
+
+    #+RESULTS:
+    : ((site-lisp-loaddefs.el . /home/esac/.emacs.d/site-lisp))
+
+  - =lazy-minor-mode-string= :: String to be displayed at mode-line.
+    Default: "lazy"
+
+  - =lazy-enable-filenotify-flag= :: Non-nil means starts to monitor
+    the directories listed at `lazy-files-alist'.
+    Default: nil
+
+  - =lazy-debug-messages-flag= :: Non-nil means show debug messages.
+    Default: nil
+
+  - =lazy-timer-interval= :: Timer interval in seconds, used to
+    trigger the timer callback function.
+    Default: 4 seconds
+
 * References
 
   1. https://www.gnu.org/software/emacs/manual/html_node/elisp/Autoload.html

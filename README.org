@@ -25,17 +25,21 @@
 
 * Motivation
 
-  Provide a easy (automatic) way to generate =autoloads= from
-  packages (or any elisp code) providing =lazy= loading and boosting
-  =Emacs= initialization.
+  Provide an easy (automatic) way to generate =autoloads= from
+  packages (or any =Elisp= code) providing =lazy= loading
+  and boosting =Emacs= startup time.
 
   | Lazy | Start-Time                           |
   | No   | Emacs started in 4.871672671 seconds |
   | Yes  | Emacs started in 0.489159734 seconds |
 
-  I also notice that =Emacs= become more stable (guessing) and fast,
-  because 'exotic' (less used resources) are loaded only when some
-  =autoload= registered function is evaluated.
+  I also notice that =Emacs= become more stable (guessing), fast,
+  because 'exotic' (less used resources) are loaded only when the
+  some =autoload= registered =function= is evaluated.
+
+* Version
+
+  - Alpha: 0.0.2 (Experimental)
 
 * Dependencies
 
@@ -134,14 +138,15 @@
   * Note: To see all the options inside =Emacs= and customize it,
     use: =M-x customize-group RET lazy RET=.
 
-  We have a few available options to customize some aspects of cannon,
-  even though the behavior will probably stay the same. Remember: this
-  package was designed having vanilla =Emacs= in mind, so if you are
-  missing something, it'll be necessary to properly extend it.
+  We have a few available options to customize some aspects of =lazy=,
+  even though the behavior will probably stay the same, remember:
+  this package was designed having vanilla =Emacs= in mind, so if
+  you are missing something, it'll be necessary to properly
+  extend it.
 
-  - =lazy-files-alist= :: Associative list of file-names (loaddefs) destination and
-    respective source path (root) directory, example:
-    \
+  - =lazy-files-alist= :: Associative list of file-names (loaddefs)
+    destination and respective source path (root) directory, example:
+
     #+BEGIN_SRC emacs-lisp
     (list (cons "site-lisp-loaddefs.el"
                 (expand-file-name "site-lisp" user-emacs-directory)))

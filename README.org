@@ -33,9 +33,9 @@
   | No   | Emacs started in 4.871672671 seconds |
   | Yes  | Emacs started in 0.489159734 seconds |
 
-  Also notice that =Emacs= become more stable (guessing) and fast,
+  I also notice that =Emacs= become more stable (guessing) and fast,
   because 'exotic' (less used resources) are loaded only when some
-  'autoload' function is called.
+  =autoload= registered function is evaluated.
 
 * Dependencies
 
@@ -79,7 +79,7 @@
 
 ** Compile
 
-   * Note: Optional but recommended.
+   * Note: Optional (recommended).
 
    To compile the files to the =Elisp= byte-compiled representation:
 
@@ -91,41 +91,43 @@
 
 * Usage
 
-  Set the `lazy-files-alist' variable, e.g:
+  Set the =lazy-files-alist= variable, e.g:
 
   #+BEGIN_SRC emacs-lisp
+
   (customize-set-variable
    'lazy-files-alist
    (list (cons "site-lisp-loaddefs.el"
                (expand-file-name "site-lisp/" user-emacs-directory)))
+
   #+END_SRC
 
   and invoke: =M-x lazy-update-autolods RET=
 
   Set the variable =lazy-enable-filenotify-flag= to =t= (true), to
-  generate the load definitions =autoloads= automatically when this
-  directory (=~/.emacs.d/site-lisp/=)  altered, i.e, when you
-  download some packages to it.
+  generate the load definitions =autoloads= automatically when the
+  monitored directory emits a signal, i.e, when you download some
+  packages to it.
 
-  It's also possible to invoke `lazy-update-directory-autoloads`
+  It's also possible to invoke =lazy-update-directory-autoloads=
   interactively: =M-x lazy-update-directory-autoloads RET=
 
-  The procedure will ask for the root directory (where packages and
-  the =elisp= code resides) and the referent file-name-path where the
+  The procedure will ask for the root directory (where packages
+  resides) and the referent =<file-name-path>= where the
   load definitions will be saved.
-
-  That's all! :D
 
 ** Require
 
    After the =loaddefs= was generated just add it to your =init.el=
-   and all the other =(require 'packages)= are unnecessary.
+   and all the other =(require 'packages)= will be unnecessary.
 
    Example:
 
    #+BEGIN_SRC emacs-lisp
    (require 'site-lisp-loaddefs)
    #+END_SRC
+
+  That's all! :D
 
 * Customize
 
@@ -141,12 +143,13 @@
     respective source path (root) directory, example:
 
     #+BEGIN_SRC emacs-lisp
+
     (list (cons "site-lisp-loaddefs.el"
                 (expand-file-name "site-lisp" user-emacs-directory)))
+
     #+END_SRC
 
-    #+RESULTS:
-    : ((site-lisp-loaddefs.el . /home/esac/.emacs.d/site-lisp))
+    * RESULTS: ((site-lisp-loaddefs.el . /home/esac/.emacs.d/site-lisp))
 
   - =lazy-minor-mode-string= :: String to be displayed at mode-line.
     Default: "lazy"

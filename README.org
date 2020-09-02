@@ -29,13 +29,13 @@
   packages (or any =Elisp= code) providing =lazy= loading
   and boosting =Emacs= startup time.
 
-  | Lazy | Start-Time                           |
-  | No   | Emacs started in 4.871672671 seconds |
-  | Yes  | Emacs started in 0.489159734 seconds |
+  | Lazy | (emacs-init-time)   |
+  | No   | 4.871672671 seconds |
+  | Yes  | 0.489159734 seconds |
 
   I also notice that =Emacs= become more stable (guessing), fast,
-  because 'exotic' (less used resources) are loaded only when the
-  some =autoload= registered =function= is evaluated.
+  because =exotic= (less used resources) are loaded only when some
+  =autoload= registered =function= is invoked.
 
 * Version
 
@@ -64,7 +64,7 @@
 
    #+END_SRC
 
-   Add =Cannon= directory to =load-path= in your
+   Add =Lazy= directory to =load-path= in your
    Emacs initialization file (~init.el~) and load it.
 
    #+BEGIN_SRC emacs-lisp
@@ -131,7 +131,7 @@
    (require 'site-lisp-loaddefs)
    #+END_SRC
 
-  That's all! :D
+   That's all! :D
 
 * Customize
 
@@ -148,6 +148,7 @@
     destination and respective source path (root) directory, example:
 
     #+BEGIN_SRC emacs-lisp
+
     (list (cons "site-lisp-loaddefs.el"
                 (expand-file-name "site-lisp" user-emacs-directory)))
     #+END_SRC

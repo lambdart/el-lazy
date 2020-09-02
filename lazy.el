@@ -52,7 +52,10 @@
    (cons "site-lisp-loaddefs.el"
          (expand-file-name "site-lisp/" user-emacs-directory)))
 
-  "Each element is a list of the form (FILE-NAME DIRECTORY).
+  "Associative list of file-names (loaddefs) destination and \
+respective source path (root) directory.
+
+Each element has the form (FILE-NAME DIRECTORY).
 
 FILE-NAME can be any string, it's recommended though to choose the file-names
 carefully, and that ends with '.el' (the convenient elisp file extension).
@@ -68,19 +71,19 @@ the generated autoloads file will be saved."
   :group 'lazy
   :safe t)
 
-(defcustom lazy-minor-mode-string (purecopy "Lazy")
+(defcustom lazy-minor-mode-string (purecopy "lazy")
   "String to be displayed at mode-line."
   :type 'string
   :group 'lazy
   :safe t)
 
-(defcustom lazy-enable-filenotify-flag t
-  "Non-nil means start to monitor the directories listed at `lazy-files-alist'.
+(defcustom lazy-enable-filenotify-flag nil
+  "Non-nil means starts to monitor the directories listed at `lazy-files-alist'.
 
 When one of the directories is modified events will be emitted, so
 `lazy-update-autoloads' will be invoked, i.e, if your add a new package
 - download files to that directory - the necessary load definitions
-will be created and the autoloads file updated automatically."
+will be created and the referent ('loaddefs') file updated automatically."
 
   :type 'bool
   :group 'lazy
@@ -93,7 +96,7 @@ will be created and the autoloads file updated automatically."
   :safe t)
 
 (defcustom lazy-timer-interval 4
-  "Timer interval (seconds) used to trigger the timer, default 4 seconds."
+  "Timer interval in seconds, used to trigger the timer callback function."
   :type 'integer
   :group 'lazy
   :safe t)
@@ -125,7 +128,14 @@ passing FORMAT-STRING and ARGS."
     (apply 'message format-string args)))
 
 (defun lazy--file-notify-callback (event)
-  "The `filenotify' related callback, called when a EVENT occur."
+  "The `filenotify' related callback, called when a EVENT occur.
+
+If timer was already initialized, restart it
+this is used to avoid calling `lazy-update-autoloads'
+after each modification on the target directories,
+when you download a lot of packages for instance,
+wait a little time (seconds) and then update the load definitions."
+
   (let ((decriptor (car event))
         (action (cadr event)))
     ;; set logs message
@@ -135,11 +145,6 @@ passing FORMAT-STRING and ARGS."
       (when (or (eq action 'created)
                 (eq action 'deleted)
                 (eq action 'renamed))
-        ;; if timer was already initialized, restart it
-        ;; this is used to avoid to call lazy-update-autoloads
-        ;; after each modification on the target directories
-        ;; when you download a lot of packages for instance,
-        ;; wait a little time (seconds) and then update the loaddefs
         ;; cancel the timer, if necessary
         (when lazy-timer
           (cancel-timer lazy-timer)

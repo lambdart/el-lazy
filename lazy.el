@@ -85,13 +85,13 @@ When one of the directories is modified events will be emitted, so
 - download files to that directory - the necessary load definitions
 will be created and the referent ('loaddefs') file updated automatically."
 
-  :type 'bool
+  :type 'boolean
   :group 'lazy
   :safe t)
 
 (defcustom lazy-debug-messages-flag nil
   "Non-nil means show debug messages."
-  :type 'bool
+  :type 'boolean
   :group 'lazy
   :safe t)
 

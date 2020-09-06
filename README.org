@@ -18,28 +18,26 @@
   associated code, then runs the real definition as if it had
   been loaded all along.
 
-  This package will monitor arbitrary directories and
-  automatic generate load definitions when necessary,
-  also provides interactive functions to trigger the
-  described feature.
+  This library it's capable of monitoring arbitrary directories
+  and automatic generate load definitions, also provides interactive
+  functions to trigger the described feature.
 
 * Motivation
 
   Provide an easy (automatic) way to generate =autoloads= from
-  packages (or any =Elisp= code) providing =lazy= loading
-  and boosting =Emacs= startup time.
+  other libraries providing =lazy= loading across =Emacs=.
 
   | Lazy | (emacs-init-time)   |
   | No   | 4.871672671 seconds |
   | Yes  | 0.489159734 seconds |
 
   I also notice that =Emacs= become more stable (guessing), fast,
-  because =exotic= (less used resources) are loaded only when some
+  because =exotic=, less used libraries, are loaded only when some
   =autoload= registered =function= is invoked.
 
 * Version
 
-  - Alpha: 0.0.2 (Experimental)
+  - Alpha: 0.0.3 (Experimental)
 
 * Dependencies
 
@@ -110,7 +108,7 @@
 
   Set the variable =lazy-enable-filenotify-flag= to =t= (true), to
   generate the load definitions =autoloads= automatically when the
-  monitored directory emits a signal, i.e, when you download some
+  monitored directory emits a signal, i.e, when you download (files)
   packages to it.
 
   It's also possible to invoke =lazy-update-directory-autoloads=
@@ -149,6 +147,7 @@
 
     #+BEGIN_SRC emacs-lisp
 
+
     (list (cons "site-lisp-loaddefs.el"
                 (expand-file-name "site-lisp" user-emacs-directory)))
     #+END_SRC
@@ -176,6 +175,7 @@
 
 * LICENSE
   MIT
+
 * EOF
 
   #+BEGIN_SRC

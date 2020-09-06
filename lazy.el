@@ -188,6 +188,12 @@ Using as a source the custom `lazy-file-alist'."
         ;; add (push) directory to directories list
         (push (cdr (assoc fn lazy-files-alist)) lazy-file-directories)))))
 
+(defun lazy--clean-internal-lists ()
+  "Clean internal lists."
+  ;; clean internal variables
+  (dolist (var lazy-internal-vars)
+    (set var nil)))
+
 ;;;###autoload
 (defun lazy-update-directory-autoloads (dir file)
   "Generate autoloads from a DIR and save in FILE destination."
@@ -261,14 +267,18 @@ and disables it otherwise."
    (t
     ;; remove file watchers
     (lazy--rm-file-notify-watch)
-    ;; clean internal variables
-    (dolist (var lazy-internal-vars)
-      (set var nil))
+    ;; clean internal lists
+    (lazy--clean-internal-lists)
     ;; set mode indicator to nil (false)
     (setq lazy-mode nil)))
-  ;; default debug message
-  (message "lazy-minor-mode %s"
-           (if lazy-mode "enable" "disable")))
+  ;; default message: show its state (on/off)
+  (lazy-show-mode-state))
+
+(defun lazy-show-mode-state ()
+  "Show `lazy-mode' state: on/off."
+  (interactive)
+  (lazy--message
+   "[Lazy]: %s" (if lazy-mode "on" "off")))
 
 ;;;###autoload
 (defun turn-on-lazy-mode ()

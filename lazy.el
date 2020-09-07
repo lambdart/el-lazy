@@ -30,7 +30,6 @@
 ;; SOFTWARE.
 ;;
 ;;; Commentary:
-;;
 ;;; Code:
 
 (require 'cl-seq)
@@ -179,14 +178,15 @@ descriptors."
   "Set internal lists, `lazy-file-names' and `lazy-filename-directories'.
 Using as a source the custom `lazy-file-alist'."
   (let ((size (length lazy-files-alist))
-        (fn nil)) ; file name
+        (file-name nil))
     (when (> size 0)
       (dotimes (i size)
-        (setq fn (car (nth i lazy-files-alist)))
+        (setq file-name (car (nth i lazy-files-alist)))
         ;; add (push) file-name to file-names list
-        (push fn lazy-file-names) ; push file
+        (push file-name lazy-file-names) ; push file
         ;; add (push) directory to directories list
-        (push (cdr (assoc fn lazy-files-alist)) lazy-file-directories)))))
+        (push (cdr (assoc file-name lazy-files-alist))
+              lazy-file-directories)))))
 
 (defun lazy--clean-internal-lists ()
   "Clean internal lists."
@@ -223,12 +223,12 @@ This function will iterate over the custom associative list
 the resulting `loaddefs' file-name and location."
   (interactive)
   (let ((size (length lazy-files-alist))
-        (fn nil) ; file name
+        (file-name nil)
         (dir nil))
     (dotimes (i size)
-      (setq fn (car (nth i lazy-files-alist)))
-      (setq dir (cdr (assoc fn lazy-files-alist)))
-      (lazy-update-directory-autoloads dir fn))))
+      (setq file-name (car (nth i lazy-files-alist)))
+      (setq dir (cdr (assoc file-name lazy-files-alist)))
+      (lazy-update-directory-autoloads dir file-name))))
 
 ;;;###autoload
 (defun lazy-toggle-debug-messages (&optional arg)
@@ -241,6 +241,12 @@ If optional ARG is non-nil, force the activation of debug messages."
   ;; logs: show message at the bottom (echo area)
   (message "Lazy debug messages: %s"
            (if lazy-debug-messages-flag "on" "off")))
+
+;;;###autoload
+(defun lazy-show-mode-state ()
+  "Show `lazy-mode' state: on/off."
+  (interactive)
+  (lazy--message "[Lazy]: %s" (if lazy-mode "on" "off")))
 
 ;;;###autoload
 (define-minor-mode lazy-mode
@@ -274,25 +280,21 @@ and disables it otherwise."
   ;; default message: show its state (on/off)
   (lazy-show-mode-state))
 
-(defun lazy-show-mode-state ()
-  "Show `lazy-mode' state: on/off."
-  (interactive)
-  (lazy--message
-   "[Lazy]: %s" (if lazy-mode "on" "off")))
-
 ;;;###autoload
 (defun turn-on-lazy-mode ()
   "Turn lazy-mode to on.
 If \\[universal-argument] enable debug messages."
   (interactive)
-  (lazy-toggle-debug-messages current-prefix-arg)
-  (lazy-mode 1))
+  (unless lazy-mode
+    (lazy-toggle-debug-messages current-prefix-arg)
+    (lazy-mode 1)))
 
 ;;;###autoload
 (defun turn-off-lazy-mode ()
   "Turn lazy-mode to off."
   (interactive)
-  (lazy-mode 0))
+  (when lazy-mode
+    (lazy-mode 0)))
 
 (provide 'lazy)
 ;;; lazy.el ends here

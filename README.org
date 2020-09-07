@@ -112,7 +112,9 @@
   packages to it.
 
   It's also possible to invoke =lazy-update-directory-autoloads=
-  interactively: =M-x lazy-update-directory-autoloads RET=
+  interactively:
+
+  =M-x lazy-update-directory-autoloads RET=
 
   The procedure will ask for the root directory (where packages
   resides) and the referent =<file-name-path>= where the
@@ -145,9 +147,8 @@
   - =lazy-files-alist= :: Associative list of file-names (loaddefs)
     destination and respective source path (root) directory, example:
 
+
     #+BEGIN_SRC emacs-lisp
-
-
     (list (cons "site-lisp-loaddefs.el"
                 (expand-file-name "site-lisp" user-emacs-directory)))
     #+END_SRC

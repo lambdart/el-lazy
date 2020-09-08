@@ -88,6 +88,12 @@ will be created and the referent ('loaddefs') file updated automatically."
   :group 'lazy
   :safe t)
 
+(defcustom lazy-kill-autoload-file-buffer-flag t
+  "Non-nil means kill `generated-autoload-file' dynamic buffer file."
+  :type 'boolean
+  :group 'lazy
+  :safe t)
+
 (defcustom lazy-debug-messages-flag nil
   "Non-nil means show debug messages."
   :type 'boolean
@@ -212,7 +218,11 @@ Using as a source the custom `lazy-file-alist'."
     ;; remove files that aren't directories
     (setq dirs (cl-remove-if-not #'file-directory-p dirs))
     ;; apply update-packages-autoloads using all dirs
-    (apply 'update-directory-autoloads dirs)))
+    (apply 'update-directory-autoloads dirs)
+    ;; delete generated-autoload-file buffer
+    (when lazy-kill-autoload-file-buffer-flag
+        (ignore-errors
+          (kill-buffer (get-file-buffer generated-autoload-file))))))
 
 ;;;###autoload
 (defun lazy-update-autoloads ()

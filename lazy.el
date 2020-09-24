@@ -107,7 +107,7 @@ will be created and the referent ('loaddefs') file updated automatically."
   :group 'lazy
   :safe t)
 
-(defcustom lazy-idle-seconds 8
+(defcustom lazy-idle-seconds 4
   "Idle timer value that will be used by `run-with-idle-timer'."
   :type 'integer
   :group 'lazy
@@ -341,18 +341,15 @@ and disables it otherwise."
 
 ;;;###autoload
 (defun turn-on-lazy-mode ()
-  "Turn lazy-mode to on.
-If \\[universal-argument] enable debug messages."
+  "Turn lazy-mode to on."
   (interactive)
-  (unless lazy-mode
-    (lazy-mode 1)))
+  (unless lazy-mode (lazy-mode 1)))
 
 ;;;###autoload
 (defun turn-off-lazy-mode ()
   "Turn lazy-mode to off."
   (interactive)
-  (when lazy-mode
-    (lazy-mode 0)))
+  (when lazy-mode (lazy-mode 0)))
 
 (provide 'lazy)
 ;;; lazy.el ends here

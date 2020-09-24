@@ -3,8 +3,8 @@
 ;; URL: https://github.com/esac-io/lazy
 ;; Author: esac <esac-io@tutanota.com>
 ;; Maintainer: esac
-;; Version: 0.0.2 alpha
-;; Package-Requires: autoload filenotify cl-seq dired-aux
+;; Version: Alpha 0.0.4
+;; Package-Requires: autoload filenotify cl-seq dired-aux timer
 ;; Keywords: autoloads load definitions
 ;;
 ;;; MIT License
@@ -36,6 +36,7 @@
 (require 'autoload)
 (require 'filenotify)
 (require 'dired-aux)
+(require 'timer)
 
 (defgroup lazy nil
   "Autoloads generator."
@@ -100,9 +101,27 @@ will be created and the referent ('loaddefs') file updated automatically."
   :group 'lazy
   :safe t)
 
+(defcustom lazy-run-idle-flag nil
+  "Non-nil means run `lazy-update-autoloads' when Emacs is idle."
+  :type 'boolean
+  :group 'lazy
+  :safe t)
+
+(defcustom lazy-idle-seconds 8
+  "Idle timer value that will be used by `run-with-idle-timer'."
+  :type 'integer
+  :group 'lazy
+  :safe t)
+
 (defcustom lazy-timer-interval 4
   "Timer interval in seconds, used to trigger the timer callback function."
   :type 'integer
+  :group 'lazy
+  :safe t)
+
+(defcustom lazy-message-prefix "[Lazy]: "
+  "Lazy message prefix."
+  :type 'string
   :group 'lazy
   :safe t)
 
@@ -120,17 +139,20 @@ will be created and the referent ('loaddefs') file updated automatically."
     lazy-file-directories)
   "List of internal variables.")
 
+(defvar lazy-idle-timer nil
+  "Idle system interface timer.")
+
 (defvar lazy-timer nil
-  "System interface timer.")
+  "Overall system interface timer.")
 
 (defvar lazy-mode nil
   "Non-nil means that lazy-mode is enabled.")
 
-(defun lazy--message (format-string &rest args)
-  "If `lazy-debug-message-flag' is non-nil invoke `message' \
-passing FORMAT-STRING and ARGS."
-  (when lazy-debug-messages-flag
-    (apply 'message format-string args)))
+(defmacro lazy--message (fmt &rest args)
+  "Display a `lazy-mode' related message at the bottom of the screen.
+See `message' for more information about FMT and ARGS arguments."
+  `(when lazy-debug-messages-flag
+     (message (concat lazy-message-prefix ,fmt) ,@args)))
 
 (defun lazy--file-notify-callback (event)
   "The `filenotify' related callback, called when a EVENT occur.
@@ -145,7 +167,7 @@ wait a little time (seconds) and then update the load definitions."
         (action (cadr event)))
     ;; set logs message
     (if (not (file-notify-valid-p decriptor))
-        (lazy--message "[Lazy]: Error, invalid file decriptor")
+        (lazy--message "Error, invalid file descriptor")
       ;; look to this events:
       (when (or (eq action 'created)
                 (eq action 'deleted)
@@ -153,11 +175,11 @@ wait a little time (seconds) and then update the load definitions."
         ;; cancel the timer, if necessary
         (when lazy-timer
           (cancel-timer lazy-timer)
-          (lazy--message "[Lazy]: Timer stopped"))
+          (lazy--message "Timer stopped"))
         ;; start timer
         (setq lazy-timer
               (run-with-timer lazy-timer-interval nil 'lazy-update-autoloads))
-        (lazy--message "[Lazy]: Timer started")))))
+        (lazy--message "Timer started")))))
 
 (defun lazy--add-file-notify-watch (dirs)
   "Add DIRS to the notifications system: `filenotofy'.
@@ -231,6 +253,7 @@ Using as a source the custom `lazy-file-alist'."
 This function will iterate over the custom associative list
 `lazy-files-alist' using its parameters to determinate
 the resulting `loaddefs' file-name and location."
+
   (interactive)
   (let ((size (length lazy-files-alist))
         (file-name nil)
@@ -241,6 +264,28 @@ the resulting `loaddefs' file-name and location."
       (lazy-update-directory-autoloads dir file-name))))
 
 ;;;###autoload
+(defun lazy-add-idle-timer (&optional arg)
+  "Add lazy idle timer functionality.
+If ARG is non-nil force the activation, otherwise
+verify `lazy-run-idle-flag' for this control."
+  (interactive "P")
+  ;; add run-idle-timer if prefix arg or lazy-run-idle-flag are true
+  (when (or arg lazy-run-idle-flag)
+    (setq lazy-idle-timer
+          (run-with-idle-timer lazy-idle-seconds t
+                               'lazy-update-autoloads))
+    (lazy--message "run idle on")))
+
+;;;###autoload
+(defun lazy-rm-idle-timer ()
+  "Cancel `lazy-idle-timer'."
+  (interactive)
+  (when lazy-idle-timer
+    (cancel-timer lazy-idle-timer)
+    (setq lazy-idle-timer nil)
+    (lazy--message "run idle off")))
+
+;;;###autoload
 (defun lazy-toggle-debug-messages (&optional arg)
   "Toggle `lazy-debug-messages-flag' bool value.
 If optional ARG is non-nil, force the activation of debug messages."
@@ -249,14 +294,14 @@ If optional ARG is non-nil, force the activation of debug messages."
   (setq lazy-debug-messages-flag
         (or arg (not lazy-debug-messages-flag)))
   ;; logs: show message at the bottom (echo area)
-  (message "Lazy debug messages: %s"
+  (message "[Lazy]: Debug messages: %s"
            (if lazy-debug-messages-flag "on" "off")))
 
 ;;;###autoload
-(defun lazy-show-mode-state ()
+(defun lazy-mode-state ()
   "Show `lazy-mode' state: on/off."
   (interactive)
-  (lazy--message "[Lazy]: %s" (if lazy-mode "on" "off")))
+  (message "[Lazy]: %s" (if lazy-mode "on" "off")))
 
 ;;;###autoload
 (define-minor-mode lazy-mode
@@ -278,17 +323,21 @@ and disables it otherwise."
     ;; add file watchers
     (when lazy-enable-filenotify-flag
       (lazy--add-file-notify-watch lazy-file-directories))
+    ;; add idle timer
+    (lazy-add-idle-timer)
     ;; set mode indicator to true
     (setq lazy-mode t))
    (t
     ;; remove file watchers
     (lazy--rm-file-notify-watch)
+    ;; remove idle timer
+    (lazy-rm-idle-timer)
     ;; clean internal lists
     (lazy--clean-internal-lists)
     ;; set mode indicator to nil (false)
     (setq lazy-mode nil)))
   ;; default message: show its state (on/off)
-  (lazy-show-mode-state))
+  (lazy-mode-state))
 
 ;;;###autoload
 (defun turn-on-lazy-mode ()
@@ -296,7 +345,6 @@ and disables it otherwise."
 If \\[universal-argument] enable debug messages."
   (interactive)
   (unless lazy-mode
-    (lazy-toggle-debug-messages current-prefix-arg)
     (lazy-mode 1)))
 
 ;;;###autoload

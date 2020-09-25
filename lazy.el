@@ -149,7 +149,7 @@ will be created and the referent ('loaddefs') file updated automatically."
   "Non-nil means that lazy-mode is enabled.")
 
 (defmacro lazy--message (fmt &rest args)
-  "Display a `lazy-mode' related message at the bottom of the screen.
+  "Display a internal message at the bottom of the screen.
 See `message' for more information about FMT and ARGS arguments."
   `(when lazy-debug-messages-flag
      (message (concat lazy-message-prefix ,fmt) ,@args)))
@@ -299,7 +299,7 @@ If optional ARG is non-nil, force the activation of debug messages."
 
 ;;;###autoload
 (defun lazy-mode-state ()
-  "Show `lazy-mode' state: on/off."
+  "Show lazy minor mode state: on/off."
   (interactive)
   (message "[Lazy]: %s" (if lazy-mode "on" "off")))
 
@@ -341,13 +341,13 @@ and disables it otherwise."
 
 ;;;###autoload
 (defun turn-on-lazy-mode ()
-  "Turn lazy-mode to on."
+  "Enable lazy minor mode."
   (interactive)
   (unless lazy-mode (lazy-mode 1)))
 
 ;;;###autoload
 (defun turn-off-lazy-mode ()
-  "Turn lazy-mode to off."
+  "Disable lazy minor mode."
   (interactive)
   (when lazy-mode (lazy-mode 0)))
 

@@ -49,7 +49,7 @@
 * Tested on
 
   - FreeBSD 12.1
-  - Emacs 26.3, 28.0.50
+  - Emacs: 27.1, 28.0.50
 
 * Installation
 ** Manually

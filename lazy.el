@@ -193,6 +193,7 @@ Push the returned file descriptor `lazy-file-descriptors' list."
                             '(change attribute-change)
                             'lazy--file-notify-callback)
      ;; descriptors internal list
+
      lazy-file-descriptors)))
 
 (defun lazy--rm-file-notify-watch ()
@@ -249,12 +250,13 @@ Using as a source the custom `lazy-file-alist'."
 ;;;###autoload
 (defun lazy-update-autoloads ()
   "Generate autoloads from directories file defined in `lazy-files-alist'.
-
 This function will iterate over the custom associative list
 `lazy-files-alist' using its parameters to determinate
 the resulting `loaddefs' file-name and location."
-
   (interactive)
+  ;; initialize lazy files list if necessary
+  (when (eq lazy-files-alist '())
+    (lazy--set-internal-lists))
   (let ((size (length lazy-files-alist))
         (file-name nil)
         (dir nil))

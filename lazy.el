@@ -3,7 +3,7 @@
 ;; URL: https://github.com/esac-io/lazy
 ;; Author: esac <esac-io@tutanota.com>
 ;; Maintainer: esac
-;; Version: Alpha 0.0.4
+;; Version: Alpha 0.0.5
 ;; Package-Requires: autoload filenotify cl-seq dired-aux timer
 ;; Keywords: autoloads load definitions
 ;;
@@ -34,8 +34,8 @@
 
 (require 'cl-seq)
 (require 'autoload)
+(require 'files)
 (require 'filenotify)
-(require 'dired-aux)
 (require 'timer)
 
 (defgroup lazy nil
@@ -223,6 +223,11 @@ Using as a source the custom `lazy-file-alist'."
   (dolist (var lazy-internal-vars)
     (set var nil)))
 
+(defun lazy--create-empty-file (file)
+  "Create a empty file."
+  (when (not (file-exists-p file))
+    (make-empty-file file nil)))
+
 ;;;###autoload
 (defun lazy-update-directory-autoloads (dir file)
   "Generate autoloads from a DIR and save in FILE destination."
@@ -236,8 +241,7 @@ Using as a source the custom `lazy-file-alist'."
         (dirs (nthcdr 2 (directory-files dir t)))
         (generated-autoload-file (expand-file-name file dir)))
     ;; if file does not exist create it
-    (when (not (file-exists-p generated-autoload-file))
-      (dired-create-empty-file generated-autoload-file))
+    (lazy--create-empty-file generated-autoload-file)
     ;; remove files that aren't directories
     (setq dirs (cl-remove-if-not #'file-directory-p dirs))
     ;; apply update-packages-autoloads using all dirs

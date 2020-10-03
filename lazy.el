@@ -126,24 +126,23 @@ will be created and the referent ('loaddefs') file updated automatically."
   :safe t)
 
 (defvar lazy-file-names '()
-  "File-names list.")
+  "Lazy internal: file names list.")
 
 (defvar lazy-file-directories '()
-  "List of directories.")
+  "Lazy internal: list of directories.")
 
 (defvar lazy-file-descriptors '()
-  "List of file descriptors.")
+  "Lazy internal: list of file descriptors.")
 
 (defvar lazy-internal-vars
-  '(lazy-file-descriptors
-    lazy-file-directories)
-  "List of internal variables.")
+  '(lazy-file-descriptors lazy-file-directories)
+  "Lazy internal: list of internal variables.")
 
 (defvar lazy-idle-timer nil
-  "Idle system interface timer.")
+  "Lazy internal: Idle system interface timer.")
 
 (defvar lazy-timer nil
-  "Overall system interface timer.")
+  "Lazy internal: Auxiliary system interface timer.")
 
 (defvar lazy-mode nil
   "Non-nil means that lazy-mode is enabled.")
@@ -193,7 +192,6 @@ Push the returned file descriptor `lazy-file-descriptors' list."
                             '(change attribute-change)
                             'lazy--file-notify-callback)
      ;; descriptors internal list
-
      lazy-file-descriptors)))
 
 (defun lazy--rm-file-notify-watch ()
@@ -207,15 +205,23 @@ descriptors."
   "Set internal lists, `lazy-file-names' and `lazy-filename-directories'.
 Using as a source the custom `lazy-file-alist'."
   (let ((size (length lazy-files-alist))
-        (file-name nil))
+        (filename nil)
+        (directory nil)
+        (i 0))
     (when (> size 0)
       (dotimes (i size)
-        (setq file-name (car (nth i lazy-files-alist)))
-        ;; add (push) file-name to file-names list
-        (push file-name lazy-file-names) ; push file
-        ;; add (push) directory to directories list
-        (push (cdr (assoc file-name lazy-files-alist))
-              lazy-file-directories)))))
+        ;; set filename
+        (setq filename (car (nth i lazy-files-alist)))
+        ;; set directory (expand again to avoid unexpected errors)
+        (setq directory
+              (expand-file-name
+               (cdr (assoc filename lazy-files-alist))))
+        ;; verify if the directory exists and its attributes
+        (when (file-directory-p directory)
+          ;; add (push) file name to file names list
+          (push filename lazy-file-names)
+          ;; add (push) directory to directories list
+          (push directory lazy-file-directories))))))
 
 (defun lazy--clean-internal-lists ()
   "Clean internal lists."
@@ -248,8 +254,8 @@ Using as a source the custom `lazy-file-alist'."
     (apply 'update-directory-autoloads dirs)
     ;; delete generated-autoload-file buffer
     (when lazy-kill-autoload-file-buffer-flag
-        (ignore-errors
-          (kill-buffer (get-file-buffer generated-autoload-file))))))
+      (ignore-errors
+        (kill-buffer (get-file-buffer generated-autoload-file))))))
 
 ;;;###autoload
 (defun lazy-update-autoloads ()

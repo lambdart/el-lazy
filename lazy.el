@@ -206,22 +206,20 @@ descriptors."
 Using as a source the custom `lazy-file-alist'."
   (let ((size (length lazy-files-alist))
         (filename nil)
-        (directory nil)
-        (i 0))
-    (when (> size 0)
-      (dotimes (i size)
-        ;; set filename
-        (setq filename (car (nth i lazy-files-alist)))
-        ;; set directory (expand again to avoid unexpected errors)
-        (setq directory
-              (expand-file-name
-               (cdr (assoc filename lazy-files-alist))))
-        ;; verify if the directory exists and its attributes
-        (when (file-directory-p directory)
-          ;; add (push) file name to file names list
-          (push filename lazy-file-names)
-          ;; add (push) directory to directories list
-          (push directory lazy-file-directories))))))
+        (directory nil))
+    (dotimes (i size)
+      ;; set filename
+      (setq filename (car (nth i lazy-files-alist)))
+      ;; set directory (expand again to avoid unexpected errors)
+      (setq directory
+            (expand-file-name
+             (cdr (assoc filename lazy-files-alist))))
+      ;; verify if the directory exists and its attributes
+      (when (file-directory-p directory)
+        ;; add (push) file name to file names list
+        (push filename lazy-file-names)
+        ;; add (push) directory to directories list
+        (push directory lazy-file-directories)))))
 
 (defun lazy--clean-internal-lists ()
   "Clean internal lists."

@@ -31,13 +31,13 @@
   | No   | 4.871672671 seconds |
   | Yes  | 0.489159734 seconds |
 
-  I also notice that =Emacs= become more stable (guessing), fast,
+  I also notice that =Emacs= become more stable and fast (guessing),
   because =exotic=, less used libraries, are loaded only when some
   =autoload= registered =function= is invoked.
 
 * Version
 
-  - Alpha: 0.0.5
+  - Alpha: 0.0.6
 
 * Dependencies
 
@@ -48,8 +48,11 @@
 
 * Tested on
 
-  - FreeBSD 12.1
-  - Emacs: 27.1, 28.0.50
+  - FreeBSD
+    . 12.1
+  - Emacs
+    . 27.1
+    . 28.0.50
 
 * Installation
 ** Manually

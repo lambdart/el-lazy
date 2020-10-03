@@ -3,7 +3,7 @@
 ;; URL: https://github.com/esac-io/lazy
 ;; Author: esac <esac-io@tutanota.com>
 ;; Maintainer: esac
-;; Version: Alpha 0.0.5
+;; Version: Alpha 0.0.6
 ;; Package-Requires: autoload filenotify cl-seq dired-aux timer
 ;; Keywords: autoloads load definitions
 ;;
@@ -107,13 +107,13 @@ will be created and the referent ('loaddefs') file updated automatically."
   :group 'lazy
   :safe t)
 
-(defcustom lazy-idle-seconds 4
+(defcustom lazy-idle-seconds 30
   "Idle timer value that will be used by `run-with-idle-timer'."
   :type 'integer
   :group 'lazy
   :safe t)
 
-(defcustom lazy-timer-interval 4
+(defcustom lazy-timer-interval 8
   "Timer interval in seconds, used to trigger the timer callback function."
   :type 'integer
   :group 'lazy
@@ -147,7 +147,7 @@ will be created and the referent ('loaddefs') file updated automatically."
 (defvar lazy-mode nil
   "Non-nil means that lazy-mode is enabled.")
 
-(defmacro lazy--message (fmt &rest args)
+(defmacro lazy---debug-message (fmt &rest args)
   "Display a internal message at the bottom of the screen.
 See `message' for more information about FMT and ARGS arguments."
   `(when lazy-debug-messages-flag
@@ -166,7 +166,7 @@ wait a little time (seconds) and then update the load definitions."
         (action (cadr event)))
     ;; set logs message
     (if (not (file-notify-valid-p decriptor))
-        (lazy--message "Error, invalid file descriptor")
+        (lazy---debug-message "Error, invalid file descriptor")
       ;; look to this events:
       (when (or (eq action 'created)
                 (eq action 'deleted)
@@ -174,11 +174,11 @@ wait a little time (seconds) and then update the load definitions."
         ;; cancel the timer, if necessary
         (when lazy-timer
           (cancel-timer lazy-timer)
-          (lazy--message "Timer stopped"))
+          (lazy---debug-message "Timer stopped"))
         ;; start timer
         (setq lazy-timer
               (run-with-timer lazy-timer-interval nil 'lazy-update-autoloads))
-        (lazy--message "Timer started")))))
+        (lazy---debug-message "Timer started")))))
 
 (defun lazy--add-file-notify-watch (dirs)
   "Add DIRS to the notifications system: `filenotofy'.
@@ -265,12 +265,16 @@ the resulting `loaddefs' file-name and location."
   ;; initialize lazy files list if necessary
   (when (eq lazy-files-alist '())
     (lazy--set-internal-lists))
+  ;; get the file names and file directories
   (let ((size (length lazy-files-alist))
         (file-name nil)
         (dir nil))
+    ;; for each equivalent
     (dotimes (i size)
+      ;; set auxiliary variables
       (setq file-name (car (nth i lazy-files-alist)))
       (setq dir (cdr (assoc file-name lazy-files-alist)))
+      ;; update autoloads
       (lazy-update-directory-autoloads dir file-name))))
 
 ;;;###autoload
@@ -281,19 +285,25 @@ verify `lazy-run-idle-flag' for this control."
   (interactive "P")
   ;; add run-idle-timer if prefix arg or lazy-run-idle-flag are true
   (when (or arg lazy-run-idle-flag)
+    ;; set timer
     (setq lazy-idle-timer
           (run-with-idle-timer lazy-idle-seconds t
                                'lazy-update-autoloads))
-    (lazy--message "run idle on")))
+    ;; show debug message
+    (lazy---debug-message "run idle on")))
 
 ;;;###autoload
 (defun lazy-rm-idle-timer ()
   "Cancel `lazy-idle-timer'."
   (interactive)
+  ;; remove time if was set
   (when lazy-idle-timer
+    ;; cancel timer
     (cancel-timer lazy-idle-timer)
+    ;; clean timer variable
     (setq lazy-idle-timer nil)
-    (lazy--message "run idle off")))
+    ;; debug message
+    (lazy---debug-message "run idle off")))
 
 ;;;###autoload
 (defun lazy-toggle-debug-messages (&optional arg)
@@ -311,6 +321,7 @@ If optional ARG is non-nil, force the activation of debug messages."
 (defun lazy-mode-state ()
   "Show lazy minor mode state: on/off."
   (interactive)
+  ;; show lazy mode state in the echo area
   (message "[Lazy]: %s" (if lazy-mode "on" "off")))
 
 ;;;###autoload
@@ -335,7 +346,7 @@ and disables it otherwise."
       (lazy--add-file-notify-watch lazy-file-directories))
     ;; add idle timer
     (lazy-add-idle-timer)
-    ;; set mode indicator to true
+    ;; set mode indicator: true
     (setq lazy-mode t))
    (t
     ;; remove file watchers
@@ -344,7 +355,7 @@ and disables it otherwise."
     (lazy-rm-idle-timer)
     ;; clean internal lists
     (lazy--clean-internal-lists)
-    ;; set mode indicator to nil (false)
+    ;; set mode indicator: false (nil)
     (setq lazy-mode nil)))
   ;; default message: show its state (on/off)
   (lazy-mode-state))

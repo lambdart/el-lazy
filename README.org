@@ -48,11 +48,8 @@
 
 * Tested on
 
-  - FreeBSD
-    . 12.1
-  - Emacs
-    . 27.1
-    . 28.0.50
+  - FreeBSD 12.1
+  - Emacs 27.1, 28.0.50
 
 * Installation
 ** Manually

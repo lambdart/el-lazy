@@ -52,12 +52,12 @@
    (cons "site-lisp-loaddefs.el"
          (expand-file-name "site-lisp/" user-emacs-directory)))
 
-  "Associative list of file-names (loaddefs) destination and \
+  "Associative list of output file names (loaddefs) and \
 respective source path (root) directory.
 
-Each element has the form (FILE-NAME DIRECTORY).
+Each element (pair) has the form (OUTPUT-FILE-NAME DIRECTORY).
 
-FILE-NAME can be any string, it's recommended though to choose the file-names
+OUTPUT-FILE-NAME can be any string, it's recommended though to choose the file names
 carefully, and that ends with '.el' (the convenient elisp file extension).
 Remember this files will be latter used at your `init.el', e.g:
 
@@ -125,17 +125,14 @@ will be created and the referent ('loaddefs') file updated automatically."
   :group 'lazy
   :safe t)
 
-(defvar lazy-file-names '()
-  "Lazy internal: file names list.")
-
-(defvar lazy-file-directories '()
+(defvar lazy-dirs '()
   "Lazy internal: list of directories.")
 
 (defvar lazy-file-descriptors '()
   "Lazy internal: list of file descriptors.")
 
 (defvar lazy-internal-vars
-  '(lazy-file-descriptors lazy-file-directories)
+  '(lazy-file-descriptors lazy-dirs)
   "Lazy internal: list of internal variables.")
 
 (defvar lazy-idle-timer nil
@@ -147,7 +144,7 @@ will be created and the referent ('loaddefs') file updated automatically."
 (defvar lazy-mode nil
   "Non-nil means that lazy-mode is enabled.")
 
-(defmacro lazy---debug-message (fmt &rest args)
+(defmacro lazy--debug-message (fmt &rest args)
   "Display a internal message at the bottom of the screen.
 See `message' for more information about FMT and ARGS arguments."
   `(when lazy-debug-messages-flag
@@ -166,7 +163,7 @@ wait a little time (seconds) and then update the load definitions."
         (action (cadr event)))
     ;; set logs message
     (if (not (file-notify-valid-p decriptor))
-        (lazy---debug-message "Error, invalid file descriptor")
+        (lazy--debug-message "Error, invalid file descriptor")
       ;; look to this events:
       (when (or (eq action 'created)
                 (eq action 'deleted)
@@ -174,11 +171,11 @@ wait a little time (seconds) and then update the load definitions."
         ;; cancel the timer, if necessary
         (when lazy-timer
           (cancel-timer lazy-timer)
-          (lazy---debug-message "Timer stopped"))
+          (lazy--debug-message "Timer stopped"))
         ;; start timer
         (setq lazy-timer
               (run-with-timer lazy-timer-interval nil 'lazy-update-autoloads))
-        (lazy---debug-message "Timer started")))))
+        (lazy--debug-message "Timer started")))))
 
 (defun lazy--add-file-notify-watch (dirs)
   "Add DIRS to the notifications system: `filenotofy'.
@@ -201,25 +198,23 @@ descriptors."
   (dolist (descriptor lazy-file-descriptors)
     (file-notify-rm-watch descriptor)))
 
-(defun lazy--set-internal-lists ()
-  "Set internal lists, `lazy-file-names' and `lazy-filename-directories'.
-Using as a source the custom `lazy-file-alist'."
+(defun lazy--set-dirs-list ()
+  "Set internal directories lists `lazy-dirs'.
+Using as a source the custom `lazy-file-alist'.
+This directories will be monitored using the filenotify library."
   (let ((size (length lazy-files-alist))
-        (filename nil)
-        (directory nil))
+        (dir nil)
+        (output-file nil))
     (dotimes (i size)
-      ;; set filename
-      (setq filename (car (nth i lazy-files-alist)))
+      ;; set (load definitions) output file name
+      (setq output-file (car (nth i lazy-files-alist)))
       ;; set directory (expand again to avoid unexpected errors)
-      (setq directory
-            (expand-file-name
-             (cdr (assoc filename lazy-files-alist))))
-      ;; verify if the directory exists and its attributes
-      (when (file-directory-p directory)
-        ;; add (push) file name to file names list
-        (push filename lazy-file-names)
+      (setq dir (expand-file-name
+                 (cdr (assoc output-file lazy-files-alist))))
+      ;; verify if the directory exists TODO: and its attributes
+      (when (file-directory-p dir)
         ;; add (push) directory to directories list
-        (push directory lazy-file-directories)))))
+        (push dir lazy-dirs)))))
 
 (defun lazy--clean-internal-lists ()
   "Clean internal lists."
@@ -233,17 +228,17 @@ Using as a source the custom `lazy-file-alist'."
     (make-empty-file file nil)))
 
 ;;;###autoload
-(defun lazy-update-directory-autoloads (dir file)
-  "Generate autoloads from a DIR and save in FILE destination."
+(defun lazy-update-directory-autoloads (dir output-file)
+  "Generate autoloads from a DIR and save in OUTPUT-FILE destination."
   ;; can be called directly (interactively, more flexible)!
   ;; map function parameters, if necessary
   (interactive
    (let* ((dir (read-directory-name "Dir: " nil nil t))
-          (file (read-file-name "File: " dir nil 'confirm)))
-     (list dir file)))
+          (output-file (read-file-name "File: " dir nil 'confirm)))
+     (list dir output-file)))
   (let (;; TODO: find another way (nthcdr 2 is used to remove '.' and '..')
         (dirs (nthcdr 2 (directory-files dir t)))
-        (generated-autoload-file (expand-file-name file dir)))
+        (generated-autoload-file (expand-file-name output-file dir)))
     ;; if file does not exist create it
     (lazy--create-empty-file generated-autoload-file)
     ;; remove files that aren't directories
@@ -262,20 +257,17 @@ This function will iterate over the custom associative list
 `lazy-files-alist' using its parameters to determinate
 the resulting `loaddefs' file-name and location."
   (interactive)
-  ;; initialize lazy files list if necessary
-  (when (eq lazy-files-alist '())
-    (lazy--set-internal-lists))
   ;; get the file names and file directories
   (let ((size (length lazy-files-alist))
-        (file-name nil)
-        (dir nil))
+        (dir  nil)
+        (output-file nil))
     ;; for each equivalent
     (dotimes (i size)
       ;; set auxiliary variables
-      (setq file-name (car (nth i lazy-files-alist)))
-      (setq dir (cdr (assoc file-name lazy-files-alist)))
+      (setq output-file (car (nth i lazy-files-alist)))
+      (setq dir (cdr (assoc output-file lazy-files-alist)))
       ;; update autoloads
-      (lazy-update-directory-autoloads dir file-name))))
+      (lazy-update-directory-autoloads dir output-file))))
 
 ;;;###autoload
 (defun lazy-add-idle-timer (&optional arg)
@@ -290,7 +282,7 @@ verify `lazy-run-idle-flag' for this control."
           (run-with-idle-timer lazy-idle-seconds t
                                'lazy-update-autoloads))
     ;; show debug message
-    (lazy---debug-message "run idle on")))
+    (lazy--debug-message "run idle on")))
 
 ;;;###autoload
 (defun lazy-rm-idle-timer ()
@@ -303,7 +295,7 @@ verify `lazy-run-idle-flag' for this control."
     ;; clean timer variable
     (setq lazy-idle-timer nil)
     ;; debug message
-    (lazy---debug-message "run idle off")))
+    (lazy--debug-message "run idle off")))
 
 ;;;###autoload
 (defun lazy-toggle-debug-messages (&optional arg)
@@ -313,7 +305,7 @@ If optional ARG is non-nil, force the activation of debug messages."
   ;; toggle logic
   (setq lazy-debug-messages-flag
         (or arg (not lazy-debug-messages-flag)))
-  ;; logs: show message at the bottom (echo area)
+  ;; display log message in echo area
   (message "[Lazy]: Debug messages: %s"
            (if lazy-debug-messages-flag "on" "off")))
 
@@ -321,8 +313,9 @@ If optional ARG is non-nil, force the activation of debug messages."
 (defun lazy-show-mode-state ()
   "Show lazy minor mode state: on/off."
   (interactive)
-  ;; show lazy mode state in the echo area
-  (message "[Lazy]: %s" (if lazy-mode "on" "off")))
+  ;; show lazy mode state in echo area
+  (message "[Lazy]: %s"
+           (if lazy-mode "on" "off")))
 
 ;;;###autoload
 (define-minor-mode lazy-mode
@@ -339,11 +332,11 @@ and disables it otherwise."
   :lighter lazy-minor-mode-string
   (cond
    (lazy-mode
-    ;; set internal lists
-    (lazy--set-internal-lists)
+    ;; set internal directories lists
+    (lazy--set-dirs-list)
     ;; add file watchers
     (when lazy-enable-filenotify-flag
-      (lazy--add-file-notify-watch lazy-file-directories))
+      (lazy--add-file-notify-watch lazy-dirs))
     ;; add idle timer
     (lazy-add-idle-timer)
     ;; set mode indicator: true
@@ -358,19 +351,21 @@ and disables it otherwise."
     ;; set mode indicator: false (nil)
     (setq lazy-mode nil)))
   ;; default message: show its state (on/off)
-  (lazy-mode-state))
+  (lazy-show-mode-state))
 
 ;;;###autoload
 (defun turn-on-lazy-mode ()
   "Enable lazy minor mode."
   (interactive)
-  (unless lazy-mode (lazy-mode 1)))
+  (unless lazy-mode
+    (lazy-mode 1)))
 
 ;;;###autoload
 (defun turn-off-lazy-mode ()
   "Disable lazy minor mode."
   (interactive)
-  (when lazy-mode (lazy-mode 0)))
+  (when lazy-mode
+    (lazy-mode 0)))
 
 (provide 'lazy)
 ;;; lazy.el ends here

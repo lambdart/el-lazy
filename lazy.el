@@ -159,10 +159,10 @@ after each modification on the target directories,
 when you download a lot of packages for instance,
 wait a little time (seconds) and then update the load definitions."
 
-  (let ((decriptor (car event))
+  (let ((descriptor (car event))
         (action (cadr event)))
     ;; set logs message
-    (if (not (file-notify-valid-p decriptor))
+    (if (not (file-notify-valid-p descriptor))
         (lazy--debug-message "Error, invalid file descriptor")
       ;; look to this events:
       (when (or (eq action 'created)

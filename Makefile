@@ -16,9 +16,9 @@ LOAD_AUTOLOAD := -l autoload
 COMPILE  = -f batch-byte-compile
 
 # AUTOLOAD related variables
-AUTOLOAD_UPDATE = -f batch-update-autoloads
+AUTOLOAD_DIR  := "${PWD}"
 AUTOLOAD_FILE := "${PWD}/lazy-autoloads.el"
-AUTOLOAD_EVAL := --eval '(setq generated-autoload-file ${AUTOLOAD_FILE})'
+AUTOLOAD_EVAL := --eval '(make-directory-autoloads ${AUTOLOAD_DIR} ${AUTOLOAD_FILE})'
 
 # Expand the source code files
 EL != ls *.el
@@ -37,7 +37,7 @@ $(ELC): $(EL)
 	${EMACS} ${LOAD_PATH} ${COMPILE} ${.ALLSRC}
 
 autoload:
-	${EMACS} ${LOAD_AUTOLOAD} ${AUTOLOAD_EVAL} ${AUTOLOAD_UPDATE}
+	${EMACS} ${LOAD_AUTOLOAD} ${AUTOLOAD_EVAL}
 
 clean:
 	${RM} ${ELC}

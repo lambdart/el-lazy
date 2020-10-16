@@ -101,7 +101,7 @@ will be created and the referent ('loaddefs') file updated automatically."
   :group 'lazy
   :safe t)
 
-(defcustom lazy-run-idle-flag nil
+(defcustom lazy-enable-run-idle-flag nil
   "Non-nil means run `lazy-update-autoloads' when Emacs is idle."
   :type 'boolean
   :group 'lazy
@@ -270,26 +270,29 @@ the resulting `loaddefs' file-name and location."
       (lazy-update-directory-autoloads dir output-file))))
 
 ;;;###autoload
-(defun lazy-add-idle-timer (&optional arg)
-  "Add lazy idle timer functionality.
-If ARG is non-nil force the activation, otherwise
-verify `lazy-run-idle-flag' for this control."
-  (interactive "P")
-  ;; add run-idle-timer if prefix arg or lazy-run-idle-flag are true
-  (when (or arg lazy-run-idle-flag)
+(defun lazy-add-idle-timer ()
+  "Set lazy idle timer functionality."
+  (interactive)
+  (cond
+   ;; verify if idle timer was already set
+   ((not (eq lazy-idle-timer nil))
+    (lazy--debug-message "run idle already on"))
+   ;; default: add run-idle-timer
+   (t
     ;; set timer
     (setq lazy-idle-timer
           (run-with-idle-timer lazy-idle-seconds t
                                'lazy-update-autoloads))
     ;; show debug message
-    (lazy--debug-message "run idle on")))
+    (lazy--debug-message "run idle on"))))
 
 ;;;###autoload
 (defun lazy-rm-idle-timer ()
   "Cancel `lazy-idle-timer'."
   (interactive)
   ;; remove time if was set
-  (when lazy-idle-timer
+  (if (not lazy-idle-timer)
+      (lazy--debug-message "run idle already off")
     ;; cancel timer
     (cancel-timer lazy-idle-timer)
     ;; clean timer variable
@@ -338,7 +341,8 @@ and disables it otherwise."
     (when lazy-enable-filenotify-flag
       (lazy--add-file-notify-watch lazy-dirs))
     ;; add idle timer
-    (lazy-add-idle-timer)
+    (when lazy-enable-run-idle-flag
+      (lazy-add-idle-timer))
     ;; set mode indicator: true
     (setq lazy-mode t))
    (t

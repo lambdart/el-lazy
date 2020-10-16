@@ -318,7 +318,7 @@ If optional ARG is non-nil, force the activation of debug messages."
            (if lazy-debug-messages-flag "on" "off")))
 
 ;;;###autoload
-(defun lazy-mode-state ()
+(defun lazy-show-mode-state ()
   "Show lazy minor mode state: on/off."
   (interactive)
   ;; show lazy mode state in the echo area

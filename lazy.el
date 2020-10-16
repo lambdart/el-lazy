@@ -317,7 +317,7 @@ If optional ARG is non-nil, force the activation of debug messages."
   "Show lazy minor mode state: on/off."
   (interactive)
   ;; show lazy mode state in echo area
-  (message "[Lazy]: %s"
+  (message "[Lazy]: mode %s"
            (if lazy-mode "on" "off")))
 
 ;;;###autoload
@@ -353,23 +353,27 @@ and disables it otherwise."
     ;; clean internal lists
     (lazy--clean-internal-lists)
     ;; set mode indicator: false (nil)
-    (setq lazy-mode nil)))
-  ;; default message: show its state (on/off)
-  (lazy-show-mode-state))
+    (setq lazy-mode nil))))
 
 ;;;###autoload
 (defun turn-on-lazy-mode ()
   "Enable lazy minor mode."
   (interactive)
+  ;; turn on if wasn't already initialized
   (unless lazy-mode
-    (lazy-mode 1)))
+    (lazy-mode 1))
+  ;; show lazy mode state: on/off
+  (lazy-show-mode-state))
 
 ;;;###autoload
 (defun turn-off-lazy-mode ()
   "Disable lazy minor mode."
   (interactive)
+  ;; turn off if necessary
   (when lazy-mode
-    (lazy-mode 0)))
+    (lazy-mode 0))
+  ;; show lazy mode state
+  (lazy-show-mode-state))
 
 (provide 'lazy)
 ;;; lazy.el ends here

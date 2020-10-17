@@ -227,15 +227,11 @@ This directories will be monitored using the filenotify library."
   (when (not (file-exists-p file))
     (make-empty-file file nil)))
 
-(defun lazy--update-directory-autoloads (dir output-file)
+(defun lazy--update-directory-autoloads (dirs output-file)
   "Make directory autoloads using obsolete `update-directory-autoloads' func."
-  (let (;; TODO: find another way (nthcdr 2 is used to remove '.' and '..')
-        (dirs (nthcdr 2 (directory-files dir t)))
-        (generated-autoload-file (expand-file-name output-file dir)))
+  (let ((generated-autoload-file output-file))
     ;; if file does not exist create it
     (lazy--create-empty-file generated-autoload-file)
-    ;; remove files that aren't directories
-    (setq dirs (cl-remove-if-not #'file-directory-p dirs))
     ;; apply update-packages-autoloads using all dirs
     (apply 'update-directory-autoloads dirs)))
 
@@ -248,15 +244,20 @@ This directories will be monitored using the filenotify library."
    (let* ((dir (read-directory-name "Dir: " nil nil t))
           (output-file (read-file-name "File: " dir nil 'confirm)))
      (list dir output-file)))
-  ;; select the right update autoloads function
-  (if (fboundp 'make-directory-autoloads)
-      (make-directory-autoloads dir output-file)
-    ;; update directory autoloads using obsolete function
-    (lazy--update-directory-autoloads dir output-file))
-  ;; delete generated-autoload-file buffer
-  (when lazy-kill-autoload-file-buffer-flag
-    (ignore-errors
-      (kill-buffer (get-file-buffer generated-autoload-file)))))
+  (let (;; TODO: find another way (nthcdr 2 is used to remove '.' and '..')
+        (dirs (nthcdr 2 (directory-files dir t)))
+        (output-file (expand-file-name output-file dir)))
+    ;; remove files that aren't directories
+    (setq dirs (cl-remove-if-not #'file-directory-p dirs))
+    ;; select the right update autoloads function
+    (if (fboundp 'make-directory-autoloads)
+        (make-directory-autoloads dirs output-file)
+      ;; update directory autoloads using obsolete function
+      (lazy--update-directory-autoloads dirs output-file))
+    ;; delete generated autoload file buffer
+    (when lazy-kill-autoload-file-buffer-flag
+      (ignore-errors
+        (kill-buffer (get-file-buffer output-file))))))
 
 ;;;###autoload
 (defun lazy-update-autoloads ()

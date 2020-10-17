@@ -3,7 +3,7 @@
 ;; URL: https://github.com/esac-io/lazy
 ;; Author: esac <esac-io@tutanota.com>
 ;; Maintainer: esac
-;; Version: Alpha 0.0.6
+;; Version: Alpha 0.0.7
 ;; Package-Requires: autoload filenotify cl-seq dired-aux timer
 ;; Keywords: autoloads load definitions
 ;;
@@ -227,6 +227,18 @@ This directories will be monitored using the filenotify library."
   (when (not (file-exists-p file))
     (make-empty-file file nil)))
 
+(defun lazy--update-directory-autoloads (dir output-file)
+  "Make directory autoloads using obsolete `update-directory-autoloads' func."
+  (let (;; TODO: find another way (nthcdr 2 is used to remove '.' and '..')
+        (dirs (nthcdr 2 (directory-files dir t)))
+        (generated-autoload-file (expand-file-name output-file dir)))
+    ;; if file does not exist create it
+    (lazy--create-empty-file generated-autoload-file)
+    ;; remove files that aren't directories
+    (setq dirs (cl-remove-if-not #'file-directory-p dirs))
+    ;; apply update-packages-autoloads using all dirs
+    (apply 'update-directory-autoloads dirs)))
+
 ;;;###autoload
 (defun lazy-update-directory-autoloads (dir output-file)
   "Generate autoloads from a DIR and save in OUTPUT-FILE destination."
@@ -236,19 +248,15 @@ This directories will be monitored using the filenotify library."
    (let* ((dir (read-directory-name "Dir: " nil nil t))
           (output-file (read-file-name "File: " dir nil 'confirm)))
      (list dir output-file)))
-  (let (;; TODO: find another way (nthcdr 2 is used to remove '.' and '..')
-        (dirs (nthcdr 2 (directory-files dir t)))
-        (generated-autoload-file (expand-file-name output-file dir)))
-    ;; if file does not exist create it
-    (lazy--create-empty-file generated-autoload-file)
-    ;; remove files that aren't directories
-    (setq dirs (cl-remove-if-not #'file-directory-p dirs))
-    ;; apply update-packages-autoloads using all dirs
-    (apply 'update-directory-autoloads dirs)
-    ;; delete generated-autoload-file buffer
-    (when lazy-kill-autoload-file-buffer-flag
-      (ignore-errors
-        (kill-buffer (get-file-buffer generated-autoload-file))))))
+  ;; select the right update autoloads function
+  (if (fboundp 'make-directory-autoloads)
+      (make-directory-autoloads dir output-file)
+    ;; update directory autoloads using obsolete function
+    (lazy--update-directory-autoloads dir output-file))
+  ;; delete generated-autoload-file buffer
+  (when lazy-kill-autoload-file-buffer-flag
+    (ignore-errors
+      (kill-buffer (get-file-buffer generated-autoload-file)))))
 
 ;;;###autoload
 (defun lazy-update-autoloads ()
@@ -270,6 +278,10 @@ the resulting `loaddefs' file-name and location."
       (lazy-update-directory-autoloads dir output-file))))
 
 ;;;###autoload
+(defalias 'update-loaddefs 'lazy-update-autoloads
+  "Update load definitions (`autoloads') alias.")
+
+;;;###autoload
 (defun lazy-add-idle-timer ()
   "Set lazy idle timer functionality."
   (interactive)
@@ -279,7 +291,7 @@ the resulting `loaddefs' file-name and location."
     (lazy--debug-message "run idle already on"))
    ;; default: add run-idle-timer
    (t
-    ;; set timer
+    ;; set the idle auxiliary timer
     (setq lazy-idle-timer
           (run-with-idle-timer lazy-idle-seconds t
                                'lazy-update-autoloads))
@@ -299,6 +311,34 @@ the resulting `loaddefs' file-name and location."
     (setq lazy-idle-timer nil)
     ;; debug message
     (lazy--debug-message "run idle off")))
+
+;;;###autoload
+(defun lazy-reload-idle-timer ()
+  "Reload idle timer.
+Invoke this function to apply the new value of `lazy-idle-timer.'"
+  (interactive)
+  ;; remove (cancel) previous timer
+  (lazy-rm-idle-timer)
+  ;; set (add) idle timer
+  (lazy-add-idle-timer)
+  ;; show the current idle
+  (lazy--debug-message
+   "current idle time %ds" lazy-idle-seconds))
+
+;;;###autoload
+(defun lazy-update-idle-time (time &optional arg)
+  "Update `lazy-idle-seconds' interactively using TIME in seconds.
+Reload the idle timer when optional argument (ARG) is used."
+  ;; interactively function arguments mapping
+  ;; time in seconds
+  ;; arg boolean flag
+  (interactive
+   (list (read-number "Time in seconds: ")
+         current-prefix-arg))
+  ;; update idle elapse time (in seconds)
+  (setq lazy-idle-seconds time)
+  ;; reload idle timer functionality
+  (when arg (lazy-reload-idle-timer)))
 
 ;;;###autoload
 (defun lazy-toggle-debug-messages (&optional arg)

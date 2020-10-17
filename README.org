@@ -37,7 +37,7 @@
 
 * Version
 
-  - Alpha: 0.0.6
+  - Alpha: 0.0.7
 
 * Dependencies
 
@@ -147,7 +147,6 @@
   - =lazy-files-alist= :: Associative list of file-names (loaddefs)
     destination and respective source path (root) directory, example:
 
-
     #+BEGIN_SRC emacs-lisp
     (list (cons "site-lisp-loaddefs.el"
                 (expand-file-name "site-lisp" user-emacs-directory)))
@@ -167,7 +166,21 @@
 
   - =lazy-timer-interval= :: Timer interval in seconds, used to
     trigger the timer callback function.
-    Default: 4 seconds
+    Default: 8 seconds
+
+  - =lazy-idle-seconds= :: Idle timer value that will be used by
+    `run-with-idle-timer'.
+    Default: 30 seconds
+
+* Commands
+
+  An object which can be invoked via the ‘command-execute’ primitive,
+  usually due to the user typing in a key sequence “bound” to that
+  command.
+
+  A command is usually a function; if the function is written in Lisp,
+  it is made into a command by an ‘interactive’ form in the function
+  definition-prefixes.
 
 * References
 

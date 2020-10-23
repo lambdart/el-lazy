@@ -32,11 +32,11 @@
 ;;; Commentary:
 ;;; Code:
 
+(require 'files)
+(require 'timer)
 (require 'cl-seq)
 (require 'autoload)
-(require 'files)
 (require 'filenotify)
-(require 'timer)
 
 (defgroup lazy nil
   "Autoloads generator."
@@ -400,9 +400,8 @@ and disables it otherwise."
 (defun turn-on-lazy-mode ()
   "Enable lazy minor mode."
   (interactive)
-  ;; turn on if wasn't already initialized
-  (unless lazy-mode
-    (lazy-mode 1))
+  ;; turn on lazy mode
+  (lazy-mode 1)
   ;; show lazy mode state: on/off
   (lazy-show-mode-state))
 
@@ -410,9 +409,8 @@ and disables it otherwise."
 (defun turn-off-lazy-mode ()
   "Disable lazy minor mode."
   (interactive)
-  ;; turn off if necessary
-  (when lazy-mode
-    (lazy-mode 0))
+  ;; turn off lazy mode
+  (lazy-mode 0)
   ;; show lazy mode state
   (lazy-show-mode-state))
 

@@ -91,3 +91,6 @@ GTAGS
 
 # Dirs
 .backup
+
+# Autoloads
+*-autoloads.el

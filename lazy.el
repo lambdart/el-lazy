@@ -228,7 +228,7 @@ This directories will be monitored using the filenotify library."
     (make-empty-file file nil)))
 
 (defun lazy--update-directory-autoloads (dirs output-file)
-  "Make directory autoloads using obsolete `update-directory-autoloads' func."
+  "Make directory autoloads using obsolete `update-directory-autoloads'."
   (let ((generated-autoload-file output-file))
     ;; if file does not exist create it
     (lazy--create-empty-file generated-autoload-file)
@@ -238,14 +238,12 @@ This directories will be monitored using the filenotify library."
 ;;;###autoload
 (defun lazy-update-directory-autoloads (dir output-file)
   "Generate autoloads from a DIR and save in OUTPUT-FILE destination."
-  ;; can be called directly (interactively, more flexible)!
-  ;; map function parameters, if necessary
+  ;; maps DIR OUTPUT-FILE parameters
   (interactive
    (let* ((dir (read-directory-name "Dir: " nil nil t))
           (output-file (read-file-name "File: " dir nil 'confirm)))
      (list dir output-file)))
-  (let (;; TODO: find another way (nthcdr 2 is used to remove '.' and '..')
-        (dirs (nthcdr 2 (directory-files dir t)))
+  (let ((dirs (directory-files dir t "^[^.]"))
         (output-file (expand-file-name output-file dir)))
     ;; remove files that aren't directories
     (setq dirs (cl-remove-if-not #'file-directory-p dirs))
@@ -323,8 +321,8 @@ Invoke this function to apply the new value of `lazy-idle-timer.'"
   ;; set (add) idle timer
   (lazy-add-idle-timer)
   ;; show the current idle
-  (lazy--debug-message
-   "current idle time %ds" lazy-idle-seconds))
+  (lazy--debug-message "current idle time %ds"
+                       lazy-idle-seconds))
 
 ;;;###autoload
 (defun lazy-update-idle-time (time &optional arg)

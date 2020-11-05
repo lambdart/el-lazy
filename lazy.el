@@ -235,7 +235,6 @@ This directories will be monitored using the filenotify library."
     ;; apply update-packages-autoloads using all dirs
     (apply 'update-directory-autoloads dirs)))
 
-;;;###autoload
 (defun lazy-update-directory-autoloads (dir output-file)
   "Generate autoloads from a DIR and save in OUTPUT-FILE destination."
   ;; maps DIR OUTPUT-FILE parameters
@@ -257,7 +256,6 @@ This directories will be monitored using the filenotify library."
       (ignore-errors
         (kill-buffer (get-file-buffer output-file))))))
 
-;;;###autoload
 (defun lazy-update-autoloads ()
   "Generate autoloads from directories file defined in `lazy-files-alist'.
 This function will iterate over the custom associative list
@@ -276,11 +274,6 @@ the resulting `loaddefs' file-name and location."
       ;; update autoloads
       (lazy-update-directory-autoloads dir output-file))))
 
-;;;###autoload
-(defalias 'update-loaddefs 'lazy-update-autoloads
-  "Update load definitions (`autoloads') alias.")
-
-;;;###autoload
 (defun lazy-add-idle-timer ()
   "Set lazy idle timer functionality."
   (interactive)
@@ -297,7 +290,6 @@ the resulting `loaddefs' file-name and location."
     ;; show debug message
     (lazy--debug-message "run idle on"))))
 
-;;;###autoload
 (defun lazy-rm-idle-timer ()
   "Cancel `lazy-idle-timer'."
   (interactive)
@@ -311,7 +303,6 @@ the resulting `loaddefs' file-name and location."
     ;; debug message
     (lazy--debug-message "run idle off")))
 
-;;;###autoload
 (defun lazy-reload-idle-timer ()
   "Reload idle timer.
 Invoke this function to apply the new value of `lazy-idle-timer.'"
@@ -324,7 +315,6 @@ Invoke this function to apply the new value of `lazy-idle-timer.'"
   (lazy--debug-message "current idle time %ds"
                        lazy-idle-seconds))
 
-;;;###autoload
 (defun lazy-update-idle-time (time &optional arg)
   "Update `lazy-idle-seconds' interactively using TIME in seconds.
 Reload the idle timer when optional argument (ARG) is used."
@@ -339,7 +329,6 @@ Reload the idle timer when optional argument (ARG) is used."
   ;; reload idle timer functionality
   (when arg (lazy-reload-idle-timer)))
 
-;;;###autoload
 (defun lazy-toggle-debug-messages (&optional arg)
   "Toggle `lazy-debug-messages-flag' bool value.
 If optional ARG is non-nil, force the activation of debug messages."
@@ -351,7 +340,6 @@ If optional ARG is non-nil, force the activation of debug messages."
   (message "[Lazy]: Debug messages: %s"
            (if lazy-debug-messages-flag "on" "off")))
 
-;;;###autoload
 (defun lazy-show-mode-state ()
   "Show lazy minor mode state: on/off."
   (interactive)
@@ -403,7 +391,6 @@ and disables it otherwise."
   ;; show lazy mode state: on/off
   (lazy-show-mode-state))
 
-;;;###autoload
 (defun turn-off-lazy-mode ()
   "Disable lazy minor mode."
   (interactive)

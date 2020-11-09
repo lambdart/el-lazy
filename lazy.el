@@ -1,11 +1,9 @@
 ;;; lazy.el --- Automatic generate package autoloads -*- lexical-binding: t -*-
 ;;
-;; URL: https://github.com/esac-io/lazy
 ;; Author: esac <esac-io@tutanota.com>
-;; Maintainer: esac
-;; Version: Alpha 0.0.7
-;; Package-Requires: autoload filenotify cl-seq dired-aux timer
+;; Homepage: https://github.com/esac-io/lazy
 ;; Keywords: autoloads load definitions
+;; Version: Alpha 0.0.8
 ;;
 ;;; MIT License
 ;;
@@ -142,7 +140,8 @@ will be created and the referent ('loaddefs') file updated automatically."
   "Lazy internal: Auxiliary system interface timer.")
 
 (defvar lazy-mode nil
-  "Non-nil means that lazy-mode is enabled.")
+  "Non-nil means that lazy-mode is enabled.
+Altering this variable directly has no effect.")
 
 (defmacro lazy--debug-message (fmt &rest args)
   "Display a internal message at the bottom of the screen.
@@ -216,9 +215,8 @@ This directories will be monitored using the filenotify library."
         ;; add (push) directory to directories list
         (push dir lazy-dirs)))))
 
-(defun lazy--clean-internal-lists ()
-  "Clean internal lists."
-  ;; clean internal variables
+(defun lazy--clean-internal-vars ()
+  "Clean internal variables."
   (dolist (var lazy-internal-vars)
     (set var nil)))
 
@@ -274,7 +272,7 @@ the resulting `loaddefs' file-name and location."
       ;; update autoloads
       (lazy-update-directory-autoloads dir output-file))))
 
-(defun lazy-add-idle-timer ()
+(defun lazy-run-idle-timer ()
   "Set lazy idle timer functionality."
   (interactive)
   (cond
@@ -290,7 +288,7 @@ the resulting `loaddefs' file-name and location."
     ;; show debug message
     (lazy--debug-message "run idle on"))))
 
-(defun lazy-rm-idle-timer ()
+(defun lazy-cancel-idle-timer ()
   "Cancel `lazy-idle-timer'."
   (interactive)
   ;; remove time if was set
@@ -308,9 +306,9 @@ the resulting `loaddefs' file-name and location."
 Invoke this function to apply the new value of `lazy-idle-timer.'"
   (interactive)
   ;; remove (cancel) previous timer
-  (lazy-rm-idle-timer)
+  (lazy-cancel-idle-timer)
   ;; set (add) idle timer
-  (lazy-add-idle-timer)
+  (lazy-run-idle-timer)
   ;; show the current idle
   (lazy--debug-message "current idle time %ds"
                        lazy-idle-seconds))
@@ -318,9 +316,7 @@ Invoke this function to apply the new value of `lazy-idle-timer.'"
 (defun lazy-update-idle-time (time &optional arg)
   "Update `lazy-idle-seconds' interactively using TIME in seconds.
 Reload the idle timer when optional argument (ARG) is used."
-  ;; interactively function arguments mapping
-  ;; time in seconds
-  ;; arg boolean flag
+  ;; interactively function arguments mapping (TIME, ARG)
   (interactive
    (list (read-number "Time in seconds: ")
          current-prefix-arg))
@@ -340,12 +336,10 @@ If optional ARG is non-nil, force the activation of debug messages."
   (message "[Lazy]: Debug messages: %s"
            (if lazy-debug-messages-flag "on" "off")))
 
-(defun lazy-show-mode-state ()
+(defun lazy-echo-mode-state ()
   "Show lazy minor mode state: on/off."
   (interactive)
-  ;; show lazy mode state in echo area
-  (message "[Lazy]: mode %s"
-           (if lazy-mode "on" "off")))
+  (message "[Lazy]: mode %s" (if lazy-mode "on" "off")))
 
 ;;;###autoload
 (define-minor-mode lazy-mode
@@ -369,16 +363,16 @@ and disables it otherwise."
       (lazy--add-file-notify-watch lazy-dirs))
     ;; add idle timer
     (when lazy-enable-run-idle-flag
-      (lazy-add-idle-timer))
+      (lazy-run-idle-timer))
     ;; set mode indicator: true
     (setq lazy-mode t))
    (t
     ;; remove file watchers
     (lazy--rm-file-notify-watch)
     ;; remove idle timer
-    (lazy-rm-idle-timer)
+    (lazy-cancel-idle-timer)
     ;; clean internal lists
-    (lazy--clean-internal-lists)
+    (lazy--clean-internal-vars)
     ;; set mode indicator: false (nil)
     (setq lazy-mode nil))))
 
@@ -389,7 +383,7 @@ and disables it otherwise."
   ;; turn on lazy mode
   (lazy-mode 1)
   ;; show lazy mode state: on/off
-  (lazy-show-mode-state))
+  (lazy-echo-mode-state))
 
 (defun turn-off-lazy-mode ()
   "Disable lazy minor mode."
@@ -397,7 +391,8 @@ and disables it otherwise."
   ;; turn off lazy mode
   (lazy-mode 0)
   ;; show lazy mode state
-  (lazy-show-mode-state))
+  (lazy-echo-mode-state))
 
 (provide 'lazy)
+
 ;;; lazy.el ends here

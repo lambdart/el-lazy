@@ -37,7 +37,7 @@
 
 * Version
 
-  - Alpha: 0.0.7
+  - Alpha: 0.0.8
 
 * Dependencies
 

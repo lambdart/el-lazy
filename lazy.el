@@ -1,13 +1,14 @@
 ;;; lazy.el --- Automatic generate package autoloads -*- lexical-binding: t -*-
 ;;
-;; Author: esac <esac-io@tutanota.com>
-;; Homepage: https://github.com/esac-io/lazy
-;; Keywords: autoloads load definitions
+;; Author: lambdart <lambdart@protonmail.com>
+;; Maintainer: lambdart
 ;; Version: Alpha 0.0.8
+;; Homepage: https://github.com/lambdart/lazy
+;; Keywords: autoloads load definitions
 ;;
 ;;; MIT License
 ;;
-;; Copyright (c) 2020 esac
+;; Copyright (c) 2020 lambdart
 ;;
 ;; Permission is hereby granted, free of charge, to any person obtaining a copy
 ;; of this software and associated documentation files (the "Software"), to deal

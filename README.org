@@ -1,5 +1,5 @@
-#+AUTHOR: esac
-#+EMAIL: esac-io@tutanota.com
+#+AUTHOR: lambdart
+#+EMAIL: lambdart@protonmail.com
 #+KEYWORDS: readme, emacs, elisp, autoloads, elisp, package
 #+LANGUAGE: en
 #+PROPERTY: header-args :tangle no
@@ -21,6 +21,10 @@
   This library it's capable of monitoring arbitrary directories
   and automatic generate load definitions, also provides interactive
   functions to trigger the described feature.
+
+  This library was designed having vanilla =Emacs= in mind, so if
+  you are missing something, it'll be necessary to properly
+  extend it.
 
 * Motivation
 
@@ -58,7 +62,7 @@
 
    #+BEGIN_SRC sh
 
-   $ git clone https://github.com/esac-io/lazy ~/.emacs.d/site-elisp/lazy
+   $ git clone https://github.com/lambdart/lazy ~/.emacs.d/site-elisp/lazy
 
    #+END_SRC
 
@@ -135,14 +139,12 @@
 
 * Customize
 
-  * Note: To see all the options inside =Emacs= and customize it,
-    use: =M-x customize-group RET lazy RET=.
+  * Note: To see all the options from =Emacs= directly, and to customize it,
+    just type: =M-x customize-group RET lazy RET=.
 
   We have a few available options to customize some aspects of =lazy=,
-  even though the behavior will probably stay the same, remember:
-  this package was designed having vanilla =Emacs= in mind, so if
-  you are missing something, it'll be necessary to properly
-  extend it.
+  even though the behavior will probably stay the same, it's recommend
+  to proper set this variables in your initialization file.
 
   - =lazy-files-alist= :: Associative list of file-names (loaddefs)
     destination and respective source path (root) directory, example:

@@ -17,7 +17,7 @@ COMPILE  = -f batch-byte-compile
 
 # AUTOLOAD related variables
 AUTOLOAD_DIR  := "${PWD}"
-AUTOLOAD_FILE := "${PWD}/lazy-autoloads.el"
+AUTOLOAD_FILE := "${PWD}/lazy-load-autoloads.el"
 AUTOLOAD_EVAL := --eval '(make-directory-autoloads ${AUTOLOAD_DIR} ${AUTOLOAD_FILE})'
 
 # Expand the source code files

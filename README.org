@@ -29,11 +29,11 @@
 * Motivation
 
   Provide an easy (automatic) way to generate =autoloads= from
-  other libraries providing =lazy= loading across =Emacs=.
+  other libraries providing =lazy-load-load= loading across =Emacs=.
 
-  | Lazy | (emacs-init-time)   |
-  | No   | 4.871672671 seconds |
-  | Yes  | 0.489159734 seconds |
+  | Lazy-Load | (emacs-init-time)   |
+  | No        | 4.871672671 seconds |
+  | Yes       | 0.489159734 seconds |
 
   I also notice that =Emacs= become more stable and fast (guessing),
   because =exotic=, less used libraries, are loaded only when some
@@ -52,8 +52,9 @@
 
 * Tested on
 
-  - FreeBSD 12.1
-  - Emacs 27.1, 28.0.50
+  | Emacs   | 27.1 | 28.0 |   |   |
+  | FreeBSD | 12.1 |      |   |   |
+  | OpenBSD |  6.8 |      |   |   |
 
 * Installation
 ** Manually
@@ -62,7 +63,7 @@
 
    #+BEGIN_SRC sh
 
-   $ git clone https://github.com/lambdart/lazy ~/.emacs.d/site-elisp/lazy
+   $ git clone https://github.com/lambdart/lazy-load ~/.emacs.d/site-elisp/lazy-load
 
    #+END_SRC
 
@@ -72,16 +73,16 @@
    #+BEGIN_SRC emacs-lisp
 
    ;; add to load-path
-   (add-to-list 'load-path "/replace/me/to/lazy/full/path")
+   (add-to-list 'load-path "/replace/me/to/lazy-load/full/path")
 
-   ;; load lazy feature
-   (require 'lazy nil t)
+   ;; load lazy-load feature
+   (require 'lazy-load nil t)
 
    #+END_SRC
 
    - Note: For a more dynamic approach:
      - =M-x load-file RET=
-     - =M-x load-library RET lazy RET=
+     - =M-x load-library RET lazy-load RET=
 
 ** Compile
 
@@ -91,34 +92,34 @@
 
    #+BEGIN_SRC sh
 
-   [at-lazy-root-directory]$ make
+   [at-lazy-load-root-directory]$ make
 
    #+END_SRC
 
 * Usage
 
-  Set the =lazy-files-alist= variable, e.g:
+  Set the =lazy-load-files-alist= variable, e.g:
 
   #+BEGIN_SRC emacs-lisp
 
   (customize-set-variable
-   'lazy-files-alist
+   'lazy-load-files-alist
    (list (cons "site-lisp-loaddefs.el"
                (expand-file-name "site-lisp/" user-emacs-directory)))
 
   #+END_SRC
 
-  and invoke: =M-x lazy-update-autolods RET=
+  and invoke: =M-x lazy-load-update-autolods RET=
 
-  Set the variable =lazy-enable-filenotify-flag= to =t= (true), to
+  Set the variable =lazy-load-enable-filenotify-flag= to =t= (true), to
   generate the load definitions =autoloads= automatically when the
   monitored directory emits a signal, i.e, when you download (files)
   packages to it.
 
-  It's also possible to invoke =lazy-update-directory-autoloads=
+  It's also possible to invoke =lazy-load-update-directory-autoloads=
   interactively:
 
-  =M-x lazy-update-directory-autoloads RET=
+  =M-x lazy-load-update-directory-autoloads RET=
 
   The procedure will ask for the root directory (where packages
   resides) and the referent =<file-name-path>= where the
@@ -140,13 +141,13 @@
 * Customize
 
   * Note: To see all the options from =Emacs= directly, and to customize it,
-    just type: =M-x customize-group RET lazy RET=.
+    just type: =M-x customize-group RET lazy-load RET=.
 
-  We have a few available options to customize some aspects of =lazy=,
+  We have a few available options to customize some aspects of =lazy-load-load=,
   even though the behavior will probably stay the same, it's recommend
   to proper set this variables in your initialization file.
 
-  - =lazy-files-alist= :: Associative list of file-names (loaddefs)
+  - =lazy-load-files-alist= :: Associative list of file-names (loaddefs)
     destination and respective source path (root) directory, example:
 
 
@@ -157,21 +158,21 @@
 
     RESULT: =(("site-lisp-loaddefs.el" . "/home/<user>/.emacs.d/site-lisp"))=
 
-  - =lazy-minor-mode-string= :: String to be displayed at mode-line.
-    Default: "lazy"
+  - =lazy-load-minor-mode-string= :: String to be displayed at mode-line.
+    Default: "lazy-load"
 
-  - =lazy-enable-filenotify-flag= :: Non-nil means starts to monitor
-    the directories listed at `lazy-files-alist'.
+  - =lazy-load-enable-filenotify-flag= :: Non-nil means starts to monitor
+    the directories listed at `lazy-load-files-alist'.
     Default: nil
 
-  - =lazy-debug-messages-flag= :: Non-nil means show debug messages.
+  - =lazy-load-debug-messages-flag= :: Non-nil means show debug messages.
     Default: nil
 
-  - =lazy-timer-interval= :: Timer interval in seconds, used to
+  - =lazy-load-timer-interval= :: Timer interval in seconds, used to
     trigger the timer callback function.
     Default: 8 seconds
 
-  - =lazy-idle-seconds= :: Idle timer value that will be used by
+  - =lazy-load-idle-seconds= :: Idle timer value that will be used by
     `run-with-idle-timer'.
     Default: 30 seconds
 

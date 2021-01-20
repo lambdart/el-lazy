@@ -51,20 +51,20 @@
    (cons "site-lisp-loaddefs.el"
          (expand-file-name "site-lisp/" user-emacs-directory)))
 
-  "Associative list of output file names (loaddefs) and \
-respective source path (root) directory.
+  "Associative list of (loaddefs-file-name . full-path-directory).
 
 Each element (pair) has the form (OUTPUT-FILE-NAME DIRECTORY).
 
-OUTPUT-FILE-NAME can be any string, it's recommended though to choose the file names
-carefully, and that ends with '.el' (the convenient elisp file extension).
-Remember this files will be latter used at your `init.el', e.g:
+OUTPUT-FILE-NAME can be any string, it's recommended though to choose
+the file names carefully, and that ends with '.el'
+(the convenient elisp file extension). Remember this files will
+be latter used at your `init.el', e.g:
 
 \(require 'site-lisp-loaddefs)
 
 DIRECTORY, must be the full-path, see `expand-file-name'
-- that will be monitored by `filenotify' and is the location where
-the generated autoloads file will be saved."
+- that will be monitored by `filenotify' and is the location
+where the generated autoloads file will be saved."
 
   :type '(alist :key-type string :value-type string)
   :group 'lazy-load
@@ -77,13 +77,12 @@ the generated autoloads file will be saved."
   :safe t)
 
 (defcustom lazy-load-enable-filenotify-flag nil
-  "Non-nil means starts to monitor the directories listed at `lazy-load-files-alist'.
-
+  "Non-nil means starts to monitor the target directories.
+Target directories are listed in `lazy-load-files-alist' variable.
 When one of the directories is modified events will be emitted, so
 `lazy-load-update-autoloads' will be invoked, i.e, if your add a new package
 - download files to that directory - the necessary load definitions
 will be created and the referent ('loaddefs') file updated automatically."
-
   :type 'boolean
   :group 'lazy-load
   :safe t)
@@ -141,7 +140,7 @@ will be created and the referent ('loaddefs') file updated automatically."
   "Lazy internal: Auxiliary system interface timer.")
 
 (defvar lazy-load-mode nil
-  "Non-nil means that lazy-load-mode is enabled.
+  "Non-nil means that Lazy-Load is enabled.
 Altering this variable directly has no effect.")
 
 (defmacro lazy-load--debug-message (fmt &rest args)
@@ -174,7 +173,9 @@ wait a little time (seconds) and then update the load definitions."
           (lazy-load--debug-message "Timer stopped"))
         ;; start timer
         (setq lazy-load-timer
-              (run-with-timer lazy-load-timer-interval nil 'lazy-load-update-autoloads))
+              (run-with-timer lazy-load-timer-interval nil
+                              'lazy-load-update-autoloads))
+        ;; debug message
         (lazy-load--debug-message "Timer started")))))
 
 (defun lazy-load--add-file-notify-watch (dirs)
@@ -203,14 +204,15 @@ descriptors."
 Using as a source the custom `lazy-load-file-alist'.
 This directories will be monitored using the filenotify library."
   (let ((size (length lazy-load-files-alist))
+        ;; auxiliary
         (dir nil)
         (output-file nil))
     (dotimes (i size)
       ;; set (load definitions) output file name
       (setq output-file (car (nth i lazy-load-files-alist)))
-      ;; set directory (expand again to avoid unexpected errors)
-      (setq dir (expand-file-name
-                 (cdr (assoc output-file lazy-load-files-alist))))
+      ;; set directory (expand to avoid unexpected errors)
+      (setq dir (expand-file-name (cdr (assoc output-file
+                                              lazy-load-files-alist))))
       ;; verify if the directory exists TODO: and its attributes
       (when (file-directory-p dir)
         ;; add (push) directory to directories list
@@ -222,12 +224,13 @@ This directories will be monitored using the filenotify library."
     (set var nil)))
 
 (defun lazy-load--create-empty-file (file)
-  "Create a empty file."
+  "Create a empty FILE."
   (when (not (file-exists-p file))
     (make-empty-file file nil)))
 
 (defun lazy-load--update-directory-autoloads (dirs output-file)
-  "Make directory autoloads using obsolete `update-directory-autoloads'."
+  "Generate autoload-file using OUTPUT-FILE from DIRS.
+Uses the outdated `update-directory-autoloads.'"
   (let ((generated-autoload-file output-file))
     ;; if file does not exist create it
     (lazy-load--create-empty-file generated-autoload-file)
@@ -241,10 +244,11 @@ This directories will be monitored using the filenotify library."
    (let* ((dir (read-directory-name "Dir: " nil nil t))
           (output-file (read-file-name "File: " dir nil 'confirm)))
      (list dir output-file)))
-  (let ((dirs (directory-files dir t "^[^.]"))
+  (let (;; remove files that aren't directories
+        (dirs (cl-remove-if-not #'file-directory-p
+                                (directory-files dir t "^[^.]")))
+        ;; set autoloads output file
         (output-file (expand-file-name output-file dir)))
-    ;; remove files that aren't directories
-    (setq dirs (cl-remove-if-not #'file-directory-p dirs))
     ;; select the right update autoloads function
     (if (fboundp 'make-directory-autoloads)
         (make-directory-autoloads dirs output-file)
@@ -363,8 +367,8 @@ and disables it otherwise."
     (when lazy-load-enable-filenotify-flag
       (lazy-load--add-file-notify-watch lazy-load-dirs))
     ;; add idle timer
-    (when lazy-load-enable-run-idle-flag
-      (lazy-load-run-idle-timer))
+    ;; (when lazy-load-enable-run-idle-flag
+    ;;   (lazy-load-run-idle-timer))
     ;; set mode indicator: true
     (setq lazy-load-mode t))
    (t

@@ -29,7 +29,7 @@
 * Motivation
 
   Provide an easy (automatic) way to generate =autoloads= from
-  other libraries providing =lazy-load-load= loading across =Emacs=.
+  other libraries providing =lazy-load= loading across =Emacs=.
 
   | Lazy-Load | (emacs-init-time)   |
   | No        | 4.871672671 seconds |
@@ -143,7 +143,7 @@
   * Note: To see all the options from =Emacs= directly, and to customize it,
     just type: =M-x customize-group RET lazy-load RET=.
 
-  We have a few available options to customize some aspects of =lazy-load-load=,
+  We have a few available options to customize some aspects of =lazy-load=,
   even though the behavior will probably stay the same, it's recommend
   to proper set this variables in your initialization file.
 

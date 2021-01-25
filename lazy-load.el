@@ -57,7 +57,7 @@ Each element (pair) has the form (OUTPUT-FILE-NAME DIRECTORY).
 
 OUTPUT-FILE-NAME can be any string, it's recommended though to choose
 the file names carefully, and that ends with '.el'
-(the convenient elisp file extension). Remember this files will
+\(the convenient elisp file extension). Remember this files will
 be latter used at your `init.el', e.g:
 
 \(require 'site-lisp-loaddefs)
@@ -265,17 +265,10 @@ This function will iterate over the custom associative list
 `lazy-load-files-alist' using its parameters to determinate
 the resulting `loaddefs' file-name and location."
   (interactive)
-  ;; get the file names and file directories
-  (let ((size (length lazy-load-files-alist))
-        (dir  nil)
-        (output-file nil))
-    ;; for each equivalent
-    (dotimes (i size)
-      ;; set auxiliary variables
-      (setq output-file (car (nth i lazy-load-files-alist)))
-      (setq dir (cdr (assoc output-file lazy-load-files-alist)))
-      ;; update autoloads
-      (lazy-load-update-directory-autoloads dir output-file))))
+  (dolist (element lazy-load-files-alist)
+    (let ((file (car element)) ; output file
+          (dir (cdr element))) ; target directory
+      (lazy-load-update-directory-autoloads dir file))))
 
 (defun lazy-load-run-idle-timer ()
   "Set lazy-load idle timer functionality."
@@ -306,6 +299,13 @@ the resulting `loaddefs' file-name and location."
     ;; debug message
     (lazy-load--debug-message "run idle off")))
 
+(defun lazy-load-loaddefs ()
+  "Reload files defined in `lazy-load-files-alist'."
+  (interactive)
+  (dolist (element lazy-load-files-alist)
+    (let ((feature (read (substring-no-properties (car element) 0 -3))))
+      (require feature nil t))))
+
 (defun lazy-load-reload-idle-timer ()
   "Reload idle timer.
 Invoke this function to apply the new value of `lazy-load-idle-timer.'"
@@ -316,7 +316,7 @@ Invoke this function to apply the new value of `lazy-load-idle-timer.'"
   (lazy-load-run-idle-timer)
   ;; show the current idle
   (lazy-load--debug-message "current idle time %ds"
-                       lazy-load-idle-seconds))
+                            lazy-load-idle-seconds))
 
 (defun lazy-load-update-idle-time (time &optional arg)
   "Update `lazy-load-idle-seconds' interactively using TIME in seconds.

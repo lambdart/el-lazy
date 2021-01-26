@@ -268,7 +268,9 @@ the resulting `loaddefs' file-name and location."
   (dolist (element lazy-load-files-alist)
     (let ((file (car element)) ; output file
           (dir (cdr element))) ; target directory
-      (lazy-load-update-directory-autoloads dir file))))
+      (lazy-load-update-directory-autoloads dir file)))
+  ;; reload load definitions
+  (lazy-load-loaddefs))
 
 (defun lazy-load-run-idle-timer ()
   "Set lazy-load idle timer functionality."
@@ -289,22 +291,27 @@ the resulting `loaddefs' file-name and location."
 (defun lazy-load-cancel-idle-timer ()
   "Cancel `lazy-load-idle-timer'."
   (interactive)
-  ;; remove time if was set
-  (if (not lazy-load-idle-timer)
-      (lazy-load--debug-message "run idle already off")
+  (cond
+   ;; if not set, just show debug message and leave
+   ((not lazy-load-idle-timer)
+    (lazy-load--debug-message "run idle already off"))
+   ;; else (default)
+   (t
     ;; cancel timer
     (cancel-timer lazy-load-idle-timer)
     ;; clean timer variable
     (setq lazy-load-idle-timer nil)
     ;; debug message
-    (lazy-load--debug-message "run idle off")))
+    (lazy-load--debug-message "run idle off"))))
 
 (defun lazy-load-loaddefs ()
   "Reload files defined in `lazy-load-files-alist'."
   (interactive)
   (dolist (element lazy-load-files-alist)
     (let ((feature (read (substring-no-properties (car element) 0 -3))))
-      (require feature nil t))))
+      (require feature nil t)))
+  ;; debug message
+  (lazy-load--debug-message "Loaddefs reloaded!"))
 
 (defun lazy-load-reload-idle-timer ()
   "Reload idle timer.
@@ -315,8 +322,7 @@ Invoke this function to apply the new value of `lazy-load-idle-timer.'"
   ;; set (add) idle timer
   (lazy-load-run-idle-timer)
   ;; show the current idle
-  (lazy-load--debug-message "current idle time %ds"
-                            lazy-load-idle-seconds))
+  (lazy-load--debug-message "current idle time %ds" lazy-load-idle-seconds))
 
 (defun lazy-load-update-idle-time (time &optional arg)
   "Update `lazy-load-idle-seconds' interactively using TIME in seconds.
@@ -366,9 +372,6 @@ and disables it otherwise."
     ;; add file watchers
     (when lazy-load-enable-filenotify-flag
       (lazy-load--add-file-notify-watch lazy-load-dirs))
-    ;; add idle timer
-    ;; (when lazy-load-enable-run-idle-flag
-    ;;   (lazy-load-run-idle-timer))
     ;; set mode indicator: true
     (setq lazy-load-mode t))
    (t

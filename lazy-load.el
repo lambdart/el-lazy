@@ -111,7 +111,7 @@ will be created and the referent ('loaddefs') file updated automatically."
   :group 'lazy-load
   :safe t)
 
-(defcustom lazy-load-timer-interval 8
+(defcustom lazy-load-timer-interval 30
   "Timer interval in seconds, used to trigger the timer callback function."
   :type 'integer
   :group 'lazy-load
@@ -157,7 +157,6 @@ this is used to avoid calling `lazy-load-update-autoloads'
 after each modification on the target directories,
 when you download a lot of packages for instance,
 wait a little time (seconds) and then update the load definitions."
-
   (let ((descriptor (car event))
         (action (cadr event)))
     ;; set logs message
@@ -168,15 +167,12 @@ wait a little time (seconds) and then update the load definitions."
                 (eq action 'deleted)
                 (eq action 'renamed))
         ;; cancel the timer, if necessary
-        (when lazy-load-timer
-          (cancel-timer lazy-load-timer)
-          (lazy-load--debug-message "Timer stopped"))
+        (and lazy-load-timer (cancel-timer lazy-load-timer))
         ;; start timer
         (setq lazy-load-timer
-              (run-with-timer lazy-load-timer-interval nil
-                              'lazy-load-update-autoloads))
-        ;; debug message
-        (lazy-load--debug-message "Timer started")))))
+              (run-with-timer lazy-load-timer-interval
+                              nil
+                              'lazy-load-update-autoloads))))))
 
 (defun lazy-load--add-file-notify-watch (dirs)
   "Add DIRS to the notifications system: `filenotofy'.
@@ -224,9 +220,8 @@ This directories will be monitored using the filenotify library."
     (set var nil)))
 
 (defun lazy-load--create-empty-file (file)
-  "Create a empty FILE."
-  (when (not (file-exists-p file))
-    (make-empty-file file nil)))
+  "Create a empty FILE if doesn't exists."
+  (or (file-exists-p file) (make-empty-file file nil)))
 
 (defun lazy-load--update-directory-autoloads (dirs output-file)
   "Generate autoload-file using OUTPUT-FILE from DIRS.
@@ -244,11 +239,13 @@ Uses the outdated `update-directory-autoloads.'"
    (let* ((dir (read-directory-name "Dir: " nil nil t))
           (output-file (read-file-name "File: " dir nil 'confirm)))
      (list dir output-file)))
-  (let (;; remove files that aren't directories
-        (dirs (cl-remove-if-not #'file-directory-p
+  ;; remove files that aren't directories
+  (let ((dirs (cl-remove-if-not #'file-directory-p
                                 (directory-files dir t "^[^.]")))
         ;; set autoloads output file
         (output-file (expand-file-name output-file dir)))
+    ;; remove file notify watcher
+    (lazy-load--rm-file-notify-watch)
     ;; select the right update autoloads function
     (if (fboundp 'make-directory-autoloads)
         (make-directory-autoloads dirs output-file)
@@ -257,7 +254,10 @@ Uses the outdated `update-directory-autoloads.'"
     ;; delete generated autoload file buffer
     (when lazy-load-kill-autoload-file-buffer-flag
       (ignore-errors
-        (kill-buffer (get-file-buffer output-file))))))
+        (kill-buffer (get-file-buffer output-file))))
+    ;; re-enable file watches
+    (and lazy-load-enable-filenotify-flag
+         (lazy-load--add-file-notify-watch lazy-load-dirs))))
 
 (defun lazy-load-update-autoloads ()
   "Generate autoloads from directories file defined in `lazy-load-files-alist'.
@@ -369,9 +369,11 @@ and disables it otherwise."
    (lazy-load-mode
     ;; set internal directories lists
     (lazy-load--set-dirs-list)
-    ;; add file watchers
-    (when lazy-load-enable-filenotify-flag
-      (lazy-load--add-file-notify-watch lazy-load-dirs))
+    ;; maybe add file watchers
+    (and lazy-load-enable-filenotify-flag
+         (lazy-load--add-file-notify-watch lazy-load-dirs))
+    ;; maybe add idle timer
+    (and lazy-load-enable-run-idle-flag (lazy-load-run-idle-timer))
     ;; set mode indicator: true
     (setq lazy-load-mode t))
    (t

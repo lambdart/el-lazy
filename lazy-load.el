@@ -123,6 +123,11 @@ will be created and the referent ('loaddefs') file updated automatically."
   :group 'lazy-load
   :safe t)
 
+(defcustom lazy-load-mode-hook nil
+  "Hooks to un after the mode was turned on."
+  :group 'lazy-load
+  :type 'hook)
+
 (defvar lazy-load-dirs '()
   "Lazy internal: list of directories.")
 
@@ -364,6 +369,7 @@ A prefix argument enables the mode if the argument is positive,
 and disables it otherwise."
 
   :group lazy-load
+  :global t
   :lighter lazy-load-minor-mode-string
   (cond
    (lazy-load-mode
@@ -374,6 +380,8 @@ and disables it otherwise."
          (lazy-load--add-file-notify-watch lazy-load-dirs))
     ;; maybe add idle timer
     (and lazy-load-enable-run-idle-flag (lazy-load-run-idle-timer))
+    ;; run hooks
+    (run-hooks lazy-load-mode-hook)
     ;; set mode indicator: true
     (setq lazy-load-mode t))
    (t

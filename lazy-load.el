@@ -128,8 +128,8 @@ will be created and the referent ('loaddefs') file updated automatically."
   :group 'lazy-load
   :type 'hook)
 
-(defvar lazy-load-dirs '()
-  "Lazy internal: list of directories.")
+(defvar lazy-load-ignore-loaddefs-regex ".+-loaddefs.el$"
+  "Lazy internal: ignore load definitions files regex.")
 
 (defvar lazy-load-file-descriptors '()
   "Lazy internal: list of file descriptors.")
@@ -163,21 +163,23 @@ after each modification on the target directories,
 when you download a lot of packages for instance,
 wait a little time (seconds) and then update the load definitions."
   (let ((descriptor (car event))
-        (action (cadr event)))
+        (action (cadr event))
+        (file (caddr event)))
     ;; set logs message
     (if (not (file-notify-valid-p descriptor))
         (lazy-load--debug-message "Error, invalid file descriptor")
-      ;; look to this events:
-      (when (or (eq action 'created)
-                (eq action 'deleted)
-                (eq action 'renamed))
-        ;; cancel the timer, if necessary
-        (and lazy-load-timer (cancel-timer lazy-load-timer))
-        ;; start timer
-        (setq lazy-load-timer
-              (run-with-timer lazy-load-timer-interval
-                              nil
-                              'lazy-load-update-autoloads))))))
+      (and (string-match-p lazy-load-ignore-loaddefs-regex file)
+           ;; look to this events:
+           (when (or (eq action 'created)
+                     (eq action 'deleted)
+                     (eq action 'renamed))
+             ;; cancel the timer, if necessary
+             (and lazy-load-timer (cancel-timer lazy-load-timer))
+             ;; start timer
+             (setq lazy-load-timer
+                   (run-with-timer lazy-load-timer-interval
+                                   nil
+                                   'lazy-load-update-autoloads)))))))
 
 (defun lazy-load--add-file-notify-watch (dirs)
   "Add DIRS to the notifications system: `filenotofy'.
@@ -185,38 +187,38 @@ Push the returned file descriptor `lazy-load-file-descriptors' list."
   ;; iterate over the directories list
   (dolist (dir dirs)
     ;; add descriptor to the `lazy-load-file-descriptors' list
-    (push
-     ;; add a file-notify watcher
-     (file-notify-add-watch dir
-                            '(change attribute-change)
-                            'lazy-load--file-notify-callback)
-     ;; descriptors internal list
-     lazy-load-file-descriptors)))
+    (push (file-notify-add-watch dir
+                                 '(change attribute-change)
+                                 'lazy-load--file-notify-callback)
+          ;; descriptors internal list
+          lazy-load-file-descriptors)))
 
 (defun lazy-load--rm-file-notify-watch ()
   "Remove `filenotify' watch using the saved descriptors.
 See, `lazy-load-file-descriptors' variable to see the list of active
 descriptors."
   (dolist (descriptor lazy-load-file-descriptors)
-    (file-notify-rm-watch descriptor)))
+    (file-notify-rm-watch descriptor))
+  ;; clean file descriptors list
+  (setq lazy-load-file-descriptors nil))
 
 (defun lazy-load--set-dirs-list ()
   "Set internal directories lists `lazy-load-dirs'.
 Using as a source the custom `lazy-load-file-alist'.
 This directories will be monitored using the filenotify library."
   (let ((size (length lazy-load-files-alist))
-        ;; auxiliary
-        (dir nil)
-        (output-file nil))
+        (dir)
+        (output-file))
+    ;; iterate over the list
     (dotimes (i size)
       ;; set (load definitions) output file name
       (setq output-file (car (nth i lazy-load-files-alist)))
       ;; set directory (expand to avoid unexpected errors)
-      (setq dir (expand-file-name (cdr (assoc output-file
-                                              lazy-load-files-alist))))
-      ;; verify if the directory exists TODO: and its attributes
+      (setq dir (expand-file-name
+                 (cdr (assoc output-file
+                             lazy-load-files-alist))))
+      ;; verify if the directory exists save it
       (when (file-directory-p dir)
-        ;; add (push) directory to directories list
         (push dir lazy-load-dirs)))))
 
 (defun lazy-load--clean-internal-vars ()
@@ -239,7 +241,6 @@ Uses the outdated `update-directory-autoloads.'"
 
 (defun lazy-load-update-directory-autoloads (dir output-file)
   "Generate autoloads from a DIR and save in OUTPUT-FILE destination."
-  ;; maps DIR OUTPUT-FILE parameters
   (interactive
    (let* ((dir (read-directory-name "Dir: " nil nil t))
           (output-file (read-file-name "File: " dir nil 'confirm)))
@@ -249,8 +250,6 @@ Uses the outdated `update-directory-autoloads.'"
                                 (directory-files dir t "^[^.]")))
         ;; set autoloads output file
         (output-file (expand-file-name output-file dir)))
-    ;; remove file notify watcher
-    (lazy-load--rm-file-notify-watch)
     ;; select the right update autoloads function
     (if (fboundp 'make-directory-autoloads)
         (make-directory-autoloads dirs output-file)
@@ -259,11 +258,9 @@ Uses the outdated `update-directory-autoloads.'"
     ;; delete generated autoload file buffer
     (when lazy-load-kill-autoload-file-buffer-flag
       (ignore-errors
-        (kill-buffer (get-file-buffer output-file))))
-    ;; re-enable file watches
-    (and lazy-load-enable-filenotify-flag
-         (lazy-load--add-file-notify-watch lazy-load-dirs))))
+        (kill-buffer (get-file-buffer output-file))))))
 
+;;;###autoload
 (defun lazy-load-update-autoloads ()
   "Generate autoloads from directories file defined in `lazy-load-files-alist'.
 This function will iterate over the custom associative list
@@ -322,7 +319,7 @@ the resulting `loaddefs' file-name and location."
   "Reload idle timer.
 Invoke this function to apply the new value of `lazy-load-idle-timer.'"
   (interactive)
-  ;; remove (cancel) previous timer
+  nn  ;; remove (cancel) previous timer
   (lazy-load-cancel-idle-timer)
   ;; set (add) idle timer
   (lazy-load-run-idle-timer)
@@ -368,8 +365,8 @@ Interactively with no prefix argument, it toggles the mode.
 A prefix argument enables the mode if the argument is positive,
 and disables it otherwise."
 
-  :group lazy-load
   :global t
+  :group 'lazy-load
   :lighter lazy-load-minor-mode-string
   (cond
    (lazy-load-mode
@@ -399,7 +396,7 @@ and disables it otherwise."
   "Enable lazy-load minor mode."
   (interactive)
   ;; turn on lazy-load mode
-  (lazy-load-mode 1)
+  (or lazy-load-mode (lazy-load-mode 1))
   ;; show lazy-load mode state: on/off
   (lazy-load-echo-mode-state))
 
@@ -407,7 +404,7 @@ and disables it otherwise."
   "Disable lazy-load minor mode."
   (interactive)
   ;; turn off lazy-load mode
-  (lazy-load-mode 0)
+  (and lazy-load-mode (lazy-load-mode 0))
   ;; show lazy-load mode state
   (lazy-load-echo-mode-state))
 

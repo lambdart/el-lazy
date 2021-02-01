@@ -165,21 +165,22 @@ wait a little time (seconds) and then update the load definitions."
   (let ((descriptor (car event))
         (action (cadr event))
         (file (caddr event)))
-    ;; set logs message
+    ;; verify if the descriptor is a valid one
     (if (not (file-notify-valid-p descriptor))
         (lazy-load--debug-message "Error, invalid file descriptor")
-      (and (string-match-p lazy-load-ignore-loaddefs-regex file)
            ;; look to this events:
            (when (or (eq action 'created)
                      (eq action 'deleted)
                      (eq action 'renamed))
              ;; cancel the timer, if necessary
              (and lazy-load-timer (cancel-timer lazy-load-timer))
-             ;; start timer
-             (setq lazy-load-timer
-                   (run-with-timer lazy-load-timer-interval
-                                   nil
-                                   'lazy-load-update-autoloads)))))))
+             ;; ignore created loaddefs
+             (or (string-match-p lazy-load-ignore-loaddefs-regex file)
+               ;; start timer
+               (setq lazy-load-timer
+                     (run-with-timer lazy-load-timer-interval
+                                     nil
+                                     'lazy-load-update-autoloads)))))))
 
 (defun lazy-load--add-file-notify-watch (dirs)
   "Add DIRS to the notifications system: `filenotofy'.

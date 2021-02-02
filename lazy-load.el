@@ -134,8 +134,11 @@ will be created and the referent ('loaddefs') file updated automatically."
 (defvar lazy-load-file-descriptors '()
   "Lazy internal: list of file descriptors.")
 
+(defvar lazy-load-watched-dirs '()
+  "Directories that are being watched.")
+
 (defvar lazy-load-internal-vars
-  '(lazy-load-file-descriptors lazy-load-dirs)
+  '(lazy-load-file-descriptors lazy-load-watched-dirs)
   "Lazy internal: list of internal variables.")
 
 (defvar lazy-load-idle-timer nil
@@ -204,7 +207,7 @@ descriptors."
   (setq lazy-load-file-descriptors nil))
 
 (defun lazy-load--set-dirs-list ()
-  "Set internal directories lists `lazy-load-dirs'.
+  "Set internal directories lists `lazy-load-watched-dirs'.
 Using as a source the custom `lazy-load-file-alist'.
 This directories will be monitored using the filenotify library."
   (let ((size (length lazy-load-files-alist))
@@ -220,7 +223,7 @@ This directories will be monitored using the filenotify library."
                              lazy-load-files-alist))))
       ;; verify if the directory exists save it
       (when (file-directory-p dir)
-        (push dir lazy-load-dirs)))))
+        (push dir lazy-load-watched-dirs)))))
 
 (defun lazy-load--clean-internal-vars ()
   "Clean internal variables."
@@ -375,7 +378,7 @@ and disables it otherwise."
     (lazy-load--set-dirs-list)
     ;; maybe add file watchers
     (and lazy-load-enable-filenotify-flag
-         (lazy-load--add-file-notify-watch lazy-load-dirs))
+         (lazy-load--add-file-notify-watch lazy-load-watched-dirs))
     ;; maybe add idle timer
     (and lazy-load-enable-run-idle-flag (lazy-load-run-idle-timer))
     ;; run hooks

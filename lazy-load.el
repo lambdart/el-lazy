@@ -178,7 +178,8 @@ wait a little time (seconds) and then update the load definitions."
              ;; cancel the timer, if necessary
              (and lazy-load-timer (cancel-timer lazy-load-timer))
              ;; ignore created loaddefs
-             (or (string-match-p lazy-load-ignore-loaddefs-regex file)
+             (unless (string-match-p lazy-load-ignore-loaddefs-regex file)
+               (lazy-load--debug-message "timer started")
                ;; start timer
                (setq lazy-load-timer
                      (run-with-timer lazy-load-timer-interval
@@ -211,6 +212,7 @@ descriptors."
 Using as a source the custom `lazy-load-file-alist'.
 This directories will be monitored using the filenotify library."
   (let ((size (length lazy-load-files-alist))
+        ;; local auxiliary
         (dir)
         (output-file))
     ;; iterate over the list

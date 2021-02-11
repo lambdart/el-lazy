@@ -52,9 +52,9 @@
 
 * Tested on
 
-  | Emacs   | 27.1 | 28.0 |   |   |
-  | FreeBSD | 12.1 |      |   |   |
-  | OpenBSD |  6.8 |      |   |   |
+  | Emacs   | 27.1 | 28.0 |
+  | FreeBSD | 12.1 | 12.2 |
+  | OpenBSD |  6.8 |      |
 
 * Installation
 ** Manually

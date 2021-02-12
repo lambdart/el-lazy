@@ -263,8 +263,9 @@ Uses the outdated `update-directory-autoloads.'"
       (lazy-load--update-directory-autoloads dirs output-file))
     ;; delete generated autoload file buffer
     (when lazy-load-kill-autoload-file-buffer-flag
-      (ignore-errors
-        (kill-buffer (get-file-buffer output-file))))))
+      (save-excursion
+        (let ((buffer (get-file-buffer output-file)))
+          (and buffer (kill-buffer buffer)))))))
 
 ;;;###autoload
 (defun lazy-load-update-autoloads ()
@@ -273,9 +274,9 @@ This function will iterate over the custom associative list
 `lazy-load-files-alist' using its parameters to determinate
 the resulting `loaddefs' file-name and location."
   (interactive)
-  (dolist (element lazy-load-files-alist)
-    (let ((file (car element)) ; output file
-          (dir (cdr element))) ; target directory
+  (dolist (elt lazy-load-files-alist)
+    (let ((file (car elt)) ; output file
+          (dir (cdr elt))) ; target directory
       (lazy-load-update-directory-autoloads dir file)))
   ;; reload load definitions
   (lazy-load-loaddefs))
@@ -325,7 +326,7 @@ the resulting `loaddefs' file-name and location."
   "Reload idle timer.
 Invoke this function to apply the new value of `lazy-load-idle-timer.'"
   (interactive)
-  nn  ;; remove (cancel) previous timer
+  ;; remove (cancel) previous timer
   (lazy-load-cancel-idle-timer)
   ;; set (add) idle timer
   (lazy-load-run-idle-timer)

@@ -356,7 +356,7 @@ If optional ARG is non-nil, force the activation of debug messages."
   (message "[Lazy]: Debug messages: %s"
            (if lazy-load-debug-messages-flag "on" "off")))
 
-(defun lazy-load-echo-mode-state ()
+(defun lazy-load-show-mode-state ()
   "Show lazy-load minor mode state: on/off."
   (interactive)
   (message "[Lazy]: mode %s" (if lazy-load-mode "on" "off")))
@@ -405,7 +405,7 @@ and disables it otherwise."
   ;; turn on lazy-load mode
   (or lazy-load-mode (lazy-load-mode 1))
   ;; show lazy-load mode state: on/off
-  (lazy-load-echo-mode-state))
+  (lazy-load-show-mode-state))
 
 (defun turn-off-lazy-load-mode ()
   "Disable lazy-load minor mode."
@@ -413,7 +413,7 @@ and disables it otherwise."
   ;; turn off lazy-load mode
   (and lazy-load-mode (lazy-load-mode 0))
   ;; show lazy-load mode state
-  (lazy-load-echo-mode-state))
+  (lazy-load-show-mode-state))
 
 (provide 'lazy-load)
 

@@ -117,7 +117,7 @@ will be created and the referent ('loaddefs') file updated automatically."
   :group 'lazy-load
   :safe t)
 
-(defcustom lazy-load-message-prefix "[Lazy]: "
+(defcustom lazy-load-message-prefix "[LAZY-LOAD]: "
   "Lazy message prefix."
   :type 'string
   :group 'lazy-load
@@ -138,7 +138,8 @@ will be created and the referent ('loaddefs') file updated automatically."
   "Directories that are being watched.")
 
 (defvar lazy-load-internal-vars
-  '(lazy-load-file-descriptors lazy-load-watched-dirs)
+  '(lazy-load-file-descriptors
+    lazy-load-watched-dirs)
   "Lazy internal: list of internal variables.")
 
 (defvar lazy-load-idle-timer nil
@@ -165,26 +166,26 @@ this is used to avoid calling `lazy-load-update-autoloads'
 after each modification on the target directories,
 when you download a lot of packages for instance,
 wait a little time (seconds) and then update the load definitions."
-  (let ((descriptor (car event))
-        (action (cadr event))
-        (file (caddr event)))
+  (let ((descriptor (car event)))
     ;; verify if the descriptor is a valid one
     (if (not (file-notify-valid-p descriptor))
-        (lazy-load--debug-message "Error, invalid file descriptor")
-           ;; look to this events:
-           (when (or (eq action 'created)
-                     (eq action 'deleted)
-                     (eq action 'renamed))
-             ;; cancel the timer, if necessary
-             (and lazy-load-timer (cancel-timer lazy-load-timer))
-             ;; ignore created loaddefs
-             (unless (string-match-p lazy-load-ignore-loaddefs-regex file)
-               (lazy-load--debug-message "timer started")
-               ;; start timer
-               (setq lazy-load-timer
-                     (run-with-timer lazy-load-timer-interval
-                                     nil
-                                     'lazy-load-update-autoloads)))))))
+      (lazy-load--debug-message "Invalid file descriptor"))
+    (let ((action (cadr event))
+          (file (caddr event)))
+      ;; look to this events:
+      (when (or (eq action 'created)
+                (eq action 'deleted)
+                (eq action 'renamed))
+        ;; cancel the timer, if necessary
+        (and lazy-load-timer (cancel-timer lazy-load-timer))
+        ;; ignore created loaddefs
+        (unless (string-match-p lazy-load-ignore-loaddefs-regex file)
+          (lazy-load--debug-message "timer started")
+          ;; start timer
+          (setq lazy-load-timer
+                (run-with-timer lazy-load-timer-interval
+                                nil
+                                'lazy-load-update-autoloads)))))))
 
 (defun lazy-load--add-file-notify-watch (dirs)
   "Add DIRS to the notifications system: `filenotofy'.
@@ -211,26 +212,14 @@ descriptors."
   "Set internal directories lists `lazy-load-watched-dirs'.
 Using as a source the custom `lazy-load-file-alist'.
 This directories will be monitored using the filenotify library."
-  (let ((size (length lazy-load-files-alist))
-        ;; local auxiliary
-        (dir)
-        (output-file))
-    ;; iterate over the list
-    (dotimes (i size)
-      ;; set (load definitions) output file name
-      (setq output-file (car (nth i lazy-load-files-alist)))
-      ;; set directory (expand to avoid unexpected errors)
-      (setq dir (expand-file-name
-                 (cdr (assoc output-file
-                             lazy-load-files-alist))))
-      ;; verify if the directory exists save it
-      (when (file-directory-p dir)
-        (push dir lazy-load-watched-dirs)))))
+  (mapc (lambda (x)
+          (push (expand-file-name (cdr x))
+                lazy-load-watched-dirs))
+        lazy-load-files-alist))
 
 (defun lazy-load--clean-internal-vars ()
   "Clean internal variables."
-  (dolist (var lazy-load-internal-vars)
-    (set var nil)))
+  (dolist (var lazy-load-internal-vars) (set var nil)))
 
 (defun lazy-load--create-empty-file (file)
   "Create a empty FILE if doesn't exists."
@@ -365,7 +354,7 @@ If optional ARG is non-nil, force the activation of debug messages."
 (define-minor-mode lazy-load-mode
   "Define a new minor mode `lazy-load-mode'.
 
-This defines the toggle command `lazy-load-mode' and (by default)
+This defines the toggle command \[lazy-load-mode] and (by default)
 a control variable `lazy-load-mode'.
 
 Interactively with no prefix argument, it toggles the mode.
@@ -396,24 +385,22 @@ and disables it otherwise."
     ;; clean internal lists
     (lazy-load--clean-internal-vars)
     ;; set mode indicator: false (nil)
-    (setq lazy-load-mode nil))))
+    (setq lazy-load-mode nil)))
+  ;; show mode state
+  (lazy-load-show-mode-state))
 
 ;;;###autoload
 (defun turn-on-lazy-load-mode ()
   "Enable lazy-load minor mode."
   (interactive)
   ;; turn on lazy-load mode
-  (or lazy-load-mode (lazy-load-mode 1))
-  ;; show lazy-load mode state: on/off
-  (lazy-load-show-mode-state))
+  (or lazy-load-mode (lazy-load-mode 1)))
 
 (defun turn-off-lazy-load-mode ()
   "Disable lazy-load minor mode."
   (interactive)
   ;; turn off lazy-load mode
-  (and lazy-load-mode (lazy-load-mode 0))
-  ;; show lazy-load mode state
-  (lazy-load-show-mode-state))
+  (and lazy-load-mode (lazy-load-mode 0)))
 
 (provide 'lazy-load)
 

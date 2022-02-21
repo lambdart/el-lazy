@@ -166,18 +166,20 @@ this is used to avoid calling `lazy-load-update-autoloads'
 after each modification on the target directories,
 when you download a lot of packages for instance,
 wait a little time (seconds) and then update the load definitions."
+
   (let ((descriptor (car event)))
     ;; verify if the descriptor is a valid one
     (if (not (file-notify-valid-p descriptor))
-      (lazy-load--debug-message "Invalid file descriptor"))
+        (lazy-load--debug-message "invalid file descriptor"))
     (let ((action (cadr event))
           (file (caddr event)))
-      ;; look to this events:
+      ;; monitor this events:
       (when (or (eq action 'created)
                 (eq action 'deleted)
                 (eq action 'renamed))
         ;; cancel the timer, if necessary
-        (and lazy-load-timer (cancel-timer lazy-load-timer))
+        (and lazy-load-timer
+             (cancel-timer lazy-load-timer))
         ;; ignore created loaddefs
         (unless (string-match-p lazy-load-ignore-loaddefs-regex file)
           (lazy-load--debug-message "timer started")
@@ -191,20 +193,22 @@ wait a little time (seconds) and then update the load definitions."
   "Add DIRS to the notifications system: `filenotofy'.
 Push the returned file descriptor `lazy-load-file-descriptors' list."
   ;; iterate over the directories list
-  (dolist (dir dirs)
-    ;; add descriptor to the `lazy-load-file-descriptors' list
-    (push (file-notify-add-watch dir
-                                 '(change attribute-change)
-                                 'lazy-load--file-notify-callback)
-          ;; descriptors internal list
-          lazy-load-file-descriptors)))
+  (mapc (lambda (dir)
+          ;; add descriptor to the `lazy-load-file-descriptors' list
+          (push (file-notify-add-watch dir
+                                       '(change attribute-change)
+                                       'lazy-load--file-notify-callback)
+                ;; descriptors internal list
+                lazy-load-file-descriptors))
+        dirs))
 
 (defun lazy-load--rm-file-notify-watch ()
   "Remove `filenotify' watch using the saved descriptors.
 See, `lazy-load-file-descriptors' variable to see the list of active
 descriptors."
-  (dolist (descriptor lazy-load-file-descriptors)
-    (file-notify-rm-watch descriptor))
+  (mapc (lambda (d)
+          (file-notify-rm-watch d))
+        lazy-load-file-descriptors)
   ;; clean file descriptors list
   (setq lazy-load-file-descriptors nil))
 
@@ -213,48 +217,63 @@ descriptors."
 Using as a source the custom `lazy-load-file-alist'.
 This directories will be monitored using the filenotify library."
   (mapc (lambda (x)
-          (push (expand-file-name (cdr x))
-                lazy-load-watched-dirs))
+          (let ((dir (expand-file-name (cdr x))))
+            (when (not (member dir lazy-load-watched-dirs))
+              (push dir lazy-load-watched-dirs))))
         lazy-load-files-alist))
 
 (defun lazy-load--clean-internal-vars ()
   "Clean internal variables."
-  (dolist (var lazy-load-internal-vars) (set var nil)))
+  (mapc (lambda (v)
+          (set v nil))
+        lazy-load-internal-vars))
 
 (defun lazy-load--create-empty-file (file)
   "Create a empty FILE if doesn't exists."
-  (or (file-exists-p file) (make-empty-file file nil)))
+  (or (file-exists-p file)
+      (make-empty-file file nil)))
 
 (defun lazy-load--update-directory-autoloads (dirs output-file)
   "Generate autoload-file using OUTPUT-FILE from DIRS.
-Uses the outdated `update-directory-autoloads.'"
+Uses the outdated `update-directory-autoloads' function."
   (let ((generated-autoload-file output-file))
-    ;; if file does not exist create it
-    (lazy-load--create-empty-file generated-autoload-file)
-    ;; apply update-packages-autoloads using all dirs
     (apply 'update-directory-autoloads dirs)))
 
-(defun lazy-load-update-directory-autoloads (dir output-file)
-  "Generate autoloads from a DIR and save in OUTPUT-FILE destination."
-  (interactive
-   (let* ((dir (read-directory-name "Dir: " nil nil t))
-          (output-file (read-file-name "File: " dir nil 'confirm)))
-     (list dir output-file)))
-  ;; remove files that aren't directories
-  (let ((dirs (cl-remove-if-not #'file-directory-p
-                                (directory-files dir t "^[^.]")))
-        ;; set autoloads output file
-        (output-file (expand-file-name output-file dir)))
-    ;; select the right update autoloads function
-    (if (fboundp 'make-directory-autoloads)
-        (make-directory-autoloads dirs output-file)
-      ;; update directory autoloads using obsolete function
-      (lazy-load--update-directory-autoloads dirs output-file))
-    ;; delete generated autoload file buffer
-    (when lazy-load-kill-autoload-file-buffer-flag
-      (save-excursion
-        (let ((buffer (get-file-buffer output-file)))
-          (and buffer (kill-buffer buffer)))))))
+(defun lazy-load--read-args ()
+  "Read DIR and output file through `minibuffer' facilities."
+  (let ((dir (read-directory-name "Dir: " nil nil t)))
+    (list dir (read-file-name "File: " dir nil 'confirm))))
+
+(defun lazy-load-update-directories-autoloads (dir output-file)
+  "Generate autoloads from DIR and save it in OUTPUT-FILE."
+  (interactive (lazy-load--read-args))
+  ;; if file does not exist create it
+  (lazy-load--create-empty-file output-file)
+  ;; use make-directory-autoloads function if available
+  (funcall (if (fboundp 'make-directory-autoloads)
+               'make-directory-autoloads
+             'lazy-load--update-directory-autoloads)
+           ;; directories list
+           (cl-remove-if-not #'file-directory-p
+                             (directory-files dir t "^[^.]"))
+           output-file)
+  ;; delete generated autoload file buffer
+  (when lazy-load-kill-autoload-file-buffer-flag
+    (save-excursion
+      (let ((buffer (get-file-buffer output-file)))
+        (and buffer (kill-buffer buffer))))))
+
+(defun lazy-load-loaddefs ()
+  "Reload files defined in `lazy-load-files-alist'."
+  (interactive)
+  (mapc (lambda (e)
+          (load-file
+           (expand-file-name
+            (concat (cdr e)
+                    (car e)))))
+        lazy-load-files-alist)
+  ;; debug message
+  (lazy-load--debug-message "Loaddefs reloaded!"))
 
 ;;;###autoload
 (defun lazy-load-update-autoloads ()
@@ -263,10 +282,13 @@ This function will iterate over the custom associative list
 `lazy-load-files-alist' using its parameters to determinate
 the resulting `loaddefs' file-name and location."
   (interactive)
-  (dolist (elt lazy-load-files-alist)
-    (let ((file (car elt)) ; output file
-          (dir (cdr elt))) ; target directory
-      (lazy-load-update-directory-autoloads dir file)))
+  (mapc (lambda (x)
+          (lazy-load-update-directories-autoloads
+           (cdr x) ; target directory
+           (expand-file-name
+            (concat (cdr x)
+                    (car x))))) ; expanded output file
+        lazy-load-files-alist)
   ;; reload load definitions
   (lazy-load-loaddefs))
 
@@ -301,15 +323,6 @@ the resulting `loaddefs' file-name and location."
     (setq lazy-load-idle-timer nil)
     ;; debug message
     (lazy-load--debug-message "run idle off"))))
-
-(defun lazy-load-loaddefs ()
-  "Reload files defined in `lazy-load-files-alist'."
-  (interactive)
-  (dolist (element lazy-load-files-alist)
-    (let ((feature (read (substring-no-properties (car element) 0 -3))))
-      (require feature nil t)))
-  ;; debug message
-  (lazy-load--debug-message "Loaddefs reloaded!"))
 
 (defun lazy-load-reload-idle-timer ()
   "Reload idle timer.

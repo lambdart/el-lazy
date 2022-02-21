@@ -266,12 +266,13 @@ Uses the outdated `update-directory-autoloads' function."
 (defun lazy-load-loaddefs ()
   "Reload files defined in `lazy-load-files-alist'."
   (interactive)
-  (mapc (lambda (e)
-          (load-file
-           (expand-file-name
-            (concat (cdr e)
-                    (car e)))))
-        lazy-load-files-alist)
+  (mapc (lambda (file)
+          (and (file-exists-p file)
+               (load-file file)))
+        (mapcar (lambda (x)
+                  (expand-file-name (car x)
+                                    (cdr x)))
+                lazy-load-files-alist))
   ;; debug message
   (lazy-load--debug-message "Loaddefs reloaded!"))
 
@@ -285,44 +286,31 @@ the resulting `loaddefs' file-name and location."
   (mapc (lambda (x)
           (lazy-load-update-directories-autoloads
            (cdr x) ; target directory
-           (expand-file-name
-            (concat (cdr x)
-                    (car x))))) ; expanded output file
+           (expand-file-name (car x)
+                             (cdr x)))) ; expanded output file
         lazy-load-files-alist)
   ;; reload load definitions
   (lazy-load-loaddefs))
 
 (defun lazy-load-run-idle-timer ()
-  "Set lazy-load idle timer functionality."
+  "Run idle timer and cache it."
   (interactive)
-  (cond
-   ;; verify if idle timer was already set
-   ((not (eq lazy-load-idle-timer nil))
-    (lazy-load--debug-message "run idle already on"))
-   ;; default: add run-idle-timer
-   (t
-    ;; set the idle auxiliary timer
-    (setq lazy-load-idle-timer
-          (run-with-idle-timer lazy-load-idle-seconds t
-                               'lazy-load-update-autoloads))
-    ;; show debug message
-    (lazy-load--debug-message "run idle on"))))
+  (setq lazy-load-idle-timer
+        (or lazy-load-idle-timer
+            (run-with-idle-timer lazy-load-idle-seconds t
+                                 'lazy-load-update-autoloads)))
+  (lazy-load--debug-message "idle timer running"))
 
 (defun lazy-load-cancel-idle-timer ()
   "Cancel `lazy-load-idle-timer'."
   (interactive)
-  (cond
-   ;; if not set, just show debug message and leave
-   ((not lazy-load-idle-timer)
-    (lazy-load--debug-message "run idle already off"))
-   ;; else (default)
-   (t
-    ;; cancel timer
-    (cancel-timer lazy-load-idle-timer)
-    ;; clean timer variable
-    (setq lazy-load-idle-timer nil)
-    ;; debug message
-    (lazy-load--debug-message "run idle off"))))
+  (setq lazy-load-idle-timer
+        (progn
+          (when lazy-load-idle-timer
+            (cancel-timer lazy-load-idle-timer))
+          ;; return nil
+          nil))
+  (lazy-load--debug-message "idle timer canceled"))
 
 (defun lazy-load-reload-idle-timer ()
   "Reload idle timer.
@@ -355,13 +343,14 @@ If optional ARG is non-nil, force the activation of debug messages."
   (setq lazy-load-debug-messages-flag
         (or arg (not lazy-load-debug-messages-flag)))
   ;; display log message in echo area
-  (message "[Lazy]: Debug messages: %s"
+  (message "[LAZY-LOAD]: Debug messages: %s"
            (if lazy-load-debug-messages-flag "on" "off")))
 
 (defun lazy-load-show-mode-state ()
   "Show lazy-load minor mode state: on/off."
   (interactive)
-  (message "[Lazy]: mode %s" (if lazy-load-mode "on" "off")))
+  (message "[LAZY-LOAD]: mode %s"
+           (if lazy-load-mode "on" "off")))
 
 ;;;###autoload
 (define-minor-mode lazy-load-mode
@@ -377,43 +366,24 @@ and disables it otherwise."
   :global t
   :group 'lazy-load
   :lighter lazy-load-minor-mode-string
-  (cond
-   (lazy-load-mode
-    ;; set internal directories lists
-    (lazy-load--set-dirs-list)
-    ;; maybe add file watchers
-    (and lazy-load-enable-filenotify-flag
-         (lazy-load--add-file-notify-watch lazy-load-watched-dirs))
-    ;; maybe add idle timer
-    (and lazy-load-enable-run-idle-flag (lazy-load-run-idle-timer))
-    ;; run hooks
-    (run-hooks lazy-load-mode-hook)
-    ;; set mode indicator: true
-    (setq lazy-load-mode t))
-   (t
-    ;; remove file watchers
-    (lazy-load--rm-file-notify-watch)
-    ;; remove idle timer
-    (lazy-load-cancel-idle-timer)
-    ;; clean internal lists
-    (lazy-load--clean-internal-vars)
-    ;; set mode indicator: false (nil)
-    (setq lazy-load-mode nil)))
-  ;; show mode state
-  (lazy-load-show-mode-state))
-
-;;;###autoload
-(defun turn-on-lazy-load-mode ()
-  "Enable lazy-load minor mode."
-  (interactive)
-  ;; turn on lazy-load mode
-  (or lazy-load-mode (lazy-load-mode 1)))
-
-(defun turn-off-lazy-load-mode ()
-  "Disable lazy-load minor mode."
-  (interactive)
-  ;; turn off lazy-load mode
-  (and lazy-load-mode (lazy-load-mode 0)))
+  ;; disable debug messages
+  (let ((lazy-load-debug-messages-flag nil))
+    ;; always clean everything
+    (mapc (lambda (fn)
+            (funcall fn))
+          '(lazy-load--rm-file-notify-watch
+            lazy-load-cancel-idle-timer
+            lazy-load--clean-internal-vars))
+    ;; enable lazy-load and its selected features
+    (and lazy-load-mode
+         ;; set internal directories lists
+         (lazy-load--set-dirs-list)
+         ;; enable file watchers
+         lazy-load-enable-filenotify-flag
+         (lazy-load--add-file-notify-watch lazy-load-watched-dirs)
+         ;; enable idle timer
+         lazy-load-enable-run-idle-flag
+         (lazy-load-run-idle-timer))))
 
 (provide 'lazy-load)
 

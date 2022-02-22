@@ -369,21 +369,26 @@ and disables it otherwise."
   ;; disable debug messages
   (let ((lazy-load-debug-messages-flag nil))
     ;; always clean everything
-    (mapc (lambda (fn)
-            (funcall fn))
-          '(lazy-load--rm-file-notify-watch
-            lazy-load-cancel-idle-timer
-            lazy-load--clean-internal-vars))
-    ;; enable lazy-load and its selected features
-    (and lazy-load-mode
-         ;; set internal directories lists
-         (lazy-load--set-dirs-list)
-         ;; enable file watchers
-         lazy-load-enable-filenotify-flag
-         (lazy-load--add-file-notify-watch lazy-load-watched-dirs)
-         ;; enable idle timer
-         lazy-load-enable-run-idle-flag
-         (lazy-load-run-idle-timer))))
+    (mapc (lambda (seq)
+            ;; predicate and call it
+            (and (not (seq-empty-p seq))
+                 (functionp (car seq))
+                 (apply 'funcall seq)))
+          ;; always execute the cleanup functions
+          (append '((lazy-load--rm-file-notify-watch)
+                    (lazy-load-cancel-idle-timer)
+                    (lazy-load--clean-internal-vars))
+                  ;; form the list of functions based on the activation
+                  ;; of lazy-load mode and its flags optional variables
+                  (and lazy-load-mode
+                       `((lazy-load--set-dirs-list)
+                         ,(if lazy-load-enable-filenotify-flag
+                              `(lazy-load--add-file-notify-watch
+                                ,lazy-load-watched-dirs)
+                            '())
+                         ,(if lazy-load-enable-run-idle-flag
+                              '(lazy-load-run-idle-timer)
+                            '())))))))
 
 (provide 'lazy-load)
 

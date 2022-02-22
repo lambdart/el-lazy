@@ -189,8 +189,8 @@ wait a little time (seconds) and then update the load definitions."
                                 nil
                                 'lazy-load-update-autoloads)))))))
 
-(defun lazy-load--add-file-notify-watch (dirs)
-  "Add DIRS to the notifications system: `filenotofy'.
+(defun lazy-load--add-file-notify-watch ()
+  "Add `lazy-load-watched-dirs' to the notifications system: `filenotofy'.
 Push the returned file descriptor `lazy-load-file-descriptors' list."
   ;; iterate over the directories list
   (mapc (lambda (dir)
@@ -200,17 +200,17 @@ Push the returned file descriptor `lazy-load-file-descriptors' list."
                                        'lazy-load--file-notify-callback)
                 ;; descriptors internal list
                 lazy-load-file-descriptors))
-        dirs))
+        lazy-load-watched-dirs))
 
 (defun lazy-load--rm-file-notify-watch ()
   "Remove `filenotify' watch using the saved descriptors.
 See, `lazy-load-file-descriptors' variable to see the list of active
 descriptors."
-  (mapc (lambda (d)
-          (file-notify-rm-watch d))
-        lazy-load-file-descriptors)
   ;; clean file descriptors list
-  (setq lazy-load-file-descriptors nil))
+  (setq lazy-load-file-descriptors
+        (prog1 nil
+          (mapc #'file-notify-rm-watch
+                lazy-load-file-descriptors))))
 
 (defun lazy-load--set-dirs-list ()
   "Set internal directories lists `lazy-load-watched-dirs'.
@@ -305,21 +305,20 @@ the resulting `loaddefs' file-name and location."
   "Cancel `lazy-load-idle-timer'."
   (interactive)
   (setq lazy-load-idle-timer
-        (progn
-          (when lazy-load-idle-timer
-            (cancel-timer lazy-load-idle-timer))
-          ;; return nil
-          nil))
-  (lazy-load--debug-message "idle timer canceled"))
+        (prog1 nil
+          (and lazy-load-idle-timer
+               (cancel-timer lazy-load-idle-timer))
+          ;; debug message
+          (lazy-load--debug-message "idle timer canceled"))))
 
 (defun lazy-load-reload-idle-timer ()
   "Reload idle timer.
 Invoke this function to apply the new value of `lazy-load-idle-timer.'"
   (interactive)
-  ;; remove (cancel) previous timer
-  (lazy-load-cancel-idle-timer)
-  ;; set (add) idle timer
-  (lazy-load-run-idle-timer)
+  ;; reset timer
+  (mapc #'funcall
+        '(lazy-load-cancel-idle-timer
+          lazy-load-run-idle-timer))
   ;; show the current idle
   (lazy-load--debug-message "current idle time %ds" lazy-load-idle-seconds))
 
@@ -368,27 +367,18 @@ and disables it otherwise."
   :lighter lazy-load-minor-mode-string
   ;; disable debug messages
   (let ((lazy-load-debug-messages-flag nil))
-    ;; always clean everything
     (mapc (lambda (seq)
             ;; predicate and call it
-            (and (not (seq-empty-p seq))
-                 (functionp (car seq))
-                 (apply 'funcall seq)))
-          ;; always execute the cleanup functions
+            (and seq (apply 'funcall seq)))
           (append '((lazy-load--rm-file-notify-watch)
                     (lazy-load-cancel-idle-timer)
                     (lazy-load--clean-internal-vars))
-                  ;; form the list of functions based on the activation
-                  ;; of lazy-load mode and its flags optional variables
                   (and lazy-load-mode
                        `((lazy-load--set-dirs-list)
-                         ,(if lazy-load-enable-filenotify-flag
-                              `(lazy-load--add-file-notify-watch
-                                ,lazy-load-watched-dirs)
-                            '())
-                         ,(if lazy-load-enable-run-idle-flag
-                              '(lazy-load-run-idle-timer)
-                            '())))))))
+                         ,(when lazy-load-enable-filenotify-flag
+                            '(lazy-load--add-file-notify-watch))
+                         ,(when lazy-load-enable-run-idle-flag
+                            '(lazy-load-run-idle-timer))))))))
 
 (provide 'lazy-load)
 

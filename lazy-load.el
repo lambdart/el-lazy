@@ -111,7 +111,7 @@ will be created and the referent ('loaddefs') file updated automatically."
   :group 'lazy-load
   :safe t)
 
-(defcustom lazy-load-timer-interval 30
+(defcustom lazy-load-timer-interval 1
   "Timer interval in seconds, used to trigger the timer callback function."
   :type 'integer
   :group 'lazy-load
@@ -171,23 +171,26 @@ wait a little time (seconds) and then update the load definitions."
     ;; verify if the descriptor is a valid one
     (if (not (file-notify-valid-p descriptor))
         (lazy-load--debug-message "invalid file descriptor"))
-    (let ((action (cadr event))
-          (file (caddr event)))
-      ;; monitor this events:
+    (let ((action (cadr event)))
+      ;; monitor this events
       (when (or (eq action 'created)
                 (eq action 'deleted)
                 (eq action 'renamed))
-        ;; cancel the timer, if necessary
-        (and lazy-load-timer
-             (cancel-timer lazy-load-timer))
-        ;; ignore created loaddefs
-        (unless (string-match-p lazy-load-ignore-loaddefs-regex file)
-          (lazy-load--debug-message "timer started")
-          ;; start timer
+        ;; ignore created loaddefs files
+        (unless (string-match-p lazy-load-ignore-loaddefs-regex
+                                (caddr event)) ; file
+          ;; cache load timer
           (setq lazy-load-timer
-                (run-with-timer lazy-load-timer-interval
-                                nil
-                                'lazy-load-update-autoloads)))))))
+                (prog2
+                    ;; cancel the timer (just in case)
+                    (and lazy-load-timer
+                         (cancel-timer lazy-load-timer))
+                    ;; run with timer, return this value prog2
+                    (run-with-timer lazy-load-timer-interval
+                                    nil
+                                    'lazy-load-update-autoloads)
+                  ;; debug message
+                  (lazy-load--debug-message "timer started"))))))))
 
 (defun lazy-load--add-file-notify-watch ()
   "Add `lazy-load-watched-dirs' to the notifications system: `filenotofy'.
@@ -195,11 +198,13 @@ Push the returned file descriptor `lazy-load-file-descriptors' list."
   ;; iterate over the directories list
   (mapc (lambda (dir)
           ;; add descriptor to the `lazy-load-file-descriptors' list
-          (push (file-notify-add-watch dir
-                                       '(change attribute-change)
-                                       'lazy-load--file-notify-callback)
-                ;; descriptors internal list
-                lazy-load-file-descriptors))
+          ;; if no errors are raised
+          (let ((temp
+                 (ignore-errors
+                   (file-notify-add-watch dir
+                                          '(change attribute-change)
+                                          'lazy-load--file-notify-callback))))
+            (and temp (push temp lazy-load-file-descriptors))))
         lazy-load-watched-dirs))
 
 (defun lazy-load--rm-file-notify-watch ()
@@ -299,7 +304,7 @@ the resulting `loaddefs' file-name and location."
         (or lazy-load-idle-timer
             (run-with-idle-timer lazy-load-idle-seconds t
                                  'lazy-load-update-autoloads)))
-  (lazy-load--debug-message "idle timer running"))
+  (lazy-load--debug-message "idle timer started"))
 
 (defun lazy-load-cancel-idle-timer ()
   "Cancel `lazy-load-idle-timer'."
@@ -316,9 +321,8 @@ the resulting `loaddefs' file-name and location."
 Invoke this function to apply the new value of `lazy-load-idle-timer.'"
   (interactive)
   ;; reset timer
-  (mapc #'funcall
-        '(lazy-load-cancel-idle-timer
-          lazy-load-run-idle-timer))
+  (mapc #'funcall '(lazy-load-cancel-idle-timer
+                    lazy-load-run-idle-timer))
   ;; show the current idle
   (lazy-load--debug-message "current idle time %ds" lazy-load-idle-seconds))
 

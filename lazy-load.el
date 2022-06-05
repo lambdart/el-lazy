@@ -355,9 +355,9 @@ If optional ARG is non-nil, force the activation of debug messages."
   (message "[LAZY-LOAD]: mode %s"
            (if lazy-load-mode "on" "off")))
 
-(defun lazy-load-mode-setup (functions)
-  "Call setup FUNCTIONS list (enable or disable functions)."
-  (mapc (lambda (f) (funcall f)) functions))
+(defun lazy-load-mode-setup (funcs)
+  "Call setup FUNCS list."
+  (mapc (lambda (f) (funcall f)) funcs))
 
 ;;;###autoload
 (define-minor-mode lazy-load-mode
@@ -393,3 +393,4 @@ and disables it otherwise."
 (provide 'lazy-load)
 
 ;;; lazy-load.el ends here
+

@@ -355,6 +355,10 @@ If optional ARG is non-nil, force the activation of debug messages."
   (message "[LAZY-LOAD]: mode %s"
            (if lazy-load-mode "on" "off")))
 
+(defun lazy-load-mode-setup (functions)
+  "Call setup FUNCTIONS list (enable or disable functions)."
+  (mapc (lambda (f) (funcall f)) functions))
+
 ;;;###autoload
 (define-minor-mode lazy-load-mode
   "Define a new minor mode `lazy-load-mode'.
@@ -371,20 +375,20 @@ and disables it otherwise."
   :lighter lazy-load-minor-mode-string
   ;; disable debug messages
   (let ((lazy-load-debug-messages-flag nil))
-    (mapc (lambda (fn)
-            (apply 'funcall fn))
-          (delq nil
-                ;; always do the cleanup
-                (append '((lazy-load--rm-file-notify-watch)
-                          (lazy-load-cancel-idle-timer)
-                          (lazy-load--clean-internal-vars))
-                        ;; maybe form enable function list
-                        (when lazy-load-mode
-                          `((lazy-load--set-dirs-list)
-                            ,(and lazy-load-enable-filenotify-flag
-                                  '(lazy-load--add-file-notify-watch))
-                            ,(and lazy-load-enable-run-idle-flag
-                                  '(lazy-load-run-idle-timer)))))))))
+    (lazy-load-mode-setup
+     (append
+      ;; always clean
+      '(lazy-load--rm-file-notify-watch
+        lazy-load-cancel-idle-timer
+        lazy-load--clean-internal-vars)
+      ;; maybe enable
+      (when lazy-load-mode
+        (delq nil
+              `(lazy-load--set-dirs-list
+                ,(and lazy-load-enable-filenotify-flag
+                      'lazy-load--add-file-notify-watch)
+                ,(and lazy-load-enable-run-idle-flag
+                      'lazy-load-run-idle-timer))))))))
 
 (provide 'lazy-load)
 

@@ -362,7 +362,7 @@ If optional ARG is non-nil, force the activation of debug messages."
 
 (defun lazy-load-mode-setup (funcs)
   "Call setup FUNCS list."
-  (mapc (lambda (f) (funcall f)) funcs))
+  (mapc (lambda (f) (and f (funcall f))) funcs))
 
 ;;;###autoload
 (define-minor-mode lazy-load-mode
@@ -381,19 +381,16 @@ and disables it otherwise."
   ;; disable debug messages
   (let ((lazy-load-debug-messages-flag nil))
     (lazy-load-mode-setup
-     (append
-      ;; always clean
-      '(lazy-load--rm-file-notify-watch
-        lazy-load-cancel-idle-timer
-        lazy-load--clean-internal-vars)
-      ;; maybe enable
-      (when lazy-load-mode
-        (delq nil
-              `(lazy-load--set-dirs-list
-                ,(and lazy-load-enable-filenotify-flag
-                      'lazy-load--add-file-notify-watch)
-                ,(and lazy-load-enable-run-idle-flag
-                      'lazy-load-run-idle-timer))))))))
+     (if lazy-load-mode
+         ;; always clean
+         '(lazy-load--rm-file-notify-watch
+           lazy-load-cancel-idle-timer
+           lazy-load--clean-internal-vars)
+       `(lazy-load--set-dirs-list
+         ,(and lazy-load-enable-filenotify-flag
+               'lazy-load--add-file-notify-watch)
+         ,(and lazy-load-enable-run-idle-flag
+               'lazy-load-run-idle-timer))))))
 
 (provide 'lazy-load)
 

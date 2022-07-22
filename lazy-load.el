@@ -137,16 +137,16 @@ will be created and the referent ('loaddefs') file updated automatically."
 (defvar lazy-load-watched-dirs '()
   "Directories that are being watched.")
 
-(defvar lazy-load-internal-vars
-  '(lazy-load-file-descriptors
-    lazy-load-watched-dirs)
-  "Lazy internal: list of internal variables.")
-
 (defvar lazy-load-idle-timer nil
   "Lazy internal: Idle system interface timer.")
 
 (defvar lazy-load-timer nil
   "Lazy internal: Auxiliary system interface timer.")
+
+(defvar lazy-load-internal-vars
+  '(lazy-load-file-descriptors
+    lazy-load-watched-dirs)
+  "Lazy internal: list of internal variables.")
 
 (defvar lazy-load-mode nil
   "Non-nil means that Lazy-Load is enabled.
@@ -229,8 +229,8 @@ This directories will be monitored using the filenotify library."
 
 (defun lazy-load--clean-internal-vars ()
   "Clean internal variables."
-  (mapc (lambda (v)
-          (set v nil))
+  (mapc (lambda (s)
+          (set s nil))
         lazy-load-internal-vars))
 
 (defun lazy-load--create-empty-file (file)
@@ -381,16 +381,15 @@ and disables it otherwise."
   ;; disable debug messages
   (let ((lazy-load-debug-messages-flag nil))
     (lazy-load-mode-setup
-     (if lazy-load-mode
-         ;; always clean
-         '(lazy-load--rm-file-notify-watch
-           lazy-load-cancel-idle-timer
-           lazy-load--clean-internal-vars)
-       `(lazy-load--set-dirs-list
-         ,(and lazy-load-enable-filenotify-flag
-               'lazy-load--add-file-notify-watch)
-         ,(and lazy-load-enable-run-idle-flag
-               'lazy-load-run-idle-timer))))))
+     (append '(lazy-load--rm-file-notify-watch
+               lazy-load-cancel-idle-timer
+               lazy-load--clean-internal-vars)
+             (when lazy-load-mode
+               `(lazy-load--set-dirs-list
+                 ,(and lazy-load-enable-filenotify-flag
+                       'lazy-load--add-file-notify-watch)
+                 ,(and lazy-load-enable-run-idle-flag
+                       'lazy-load-run-idle-timer)))))))
 
 (provide 'lazy-load)
 

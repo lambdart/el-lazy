@@ -60,7 +60,7 @@ the file names carefully, and that ends with '.el'
 \(the convenient elisp file extension). Remember this files will
 be latter used at your `init.el', e.g:
 
-\(require 'site-lisp-loaddefs)
+\(require \='site-lisp-loaddefs)
 
 DIRECTORY, must be the full-path, see `expand-file-name'
 - that will be monitored by `filenotify' and is the location
@@ -249,24 +249,29 @@ Uses the outdated `update-directory-autoloads' function."
   (let ((dir (read-directory-name "Dir: " nil nil t)))
     (list dir (read-file-name "File: " dir nil 'confirm))))
 
-(defun lazy-load-update-directories-autoloads (dir output-file)
-  "Generate autoloads from DIR and save it in OUTPUT-FILE."
-  (interactive (lazy-load--read-args))
-  ;; if file does not exist create it
-  (lazy-load--create-empty-file output-file)
-  ;; use make-directory-autoloads function if available
-  (funcall (if (fboundp 'make-directory-autoloads)
-               'make-directory-autoloads
-             'lazy-load--update-directory-autoloads)
-           ;; directories list
-           (cl-remove-if-not #'file-directory-p
-                             (directory-files dir t "^[^.]"))
-           output-file)
-  ;; delete generated autoload file buffer
+(defun lazy-load--kill-autoload-file-buffer (output-file)
+  "Kill generated autoload OUTPUT-FILE buffer."
+  (interactive)
   (when lazy-load-kill-autoload-file-buffer-flag
     (save-excursion
       (let ((buffer (get-file-buffer output-file)))
         (and buffer (kill-buffer buffer))))))
+
+(defun lazy-load-update-directories-autoloads (dir output-file)
+  "Generate autoloads from DIR and save it in OUTPUT-FILE."
+  (interactive (lazy-load--read-args))
+  (let ((func (if (fboundp 'make-directory-autoloads)
+                  'make-directory-autoloads
+                'lazy-load--update-directory-autoloads))
+        (dirs (cl-remove-if-not #'file-directory-p
+                                (directory-files dir t "^[^.]"))))
+    (mapc (lambda (x)
+            (apply 'funcall (car x) (cdr x)))
+          ;; create empty file, update autoloads and maybe kill the generated
+          ;; autoloads file
+          `((lazy-load--create-empty-file ,output-file)
+            (,func ,dirs ,output-file)
+            (lazy-load--kill-autoload-file-buffer ,output-file)))))
 
 (defun lazy-load-loaddefs ()
   "Reload files defined in `lazy-load-files-alist'."
